@@ -33,7 +33,6 @@ export const kahn: AlgorithmDefinition = {
         const labels = nodeLabelMap(graph);
         const ordered = sortedNodes(graph);
 
-        // M[v]: grau de entrada d⁻(v), atualizado no lugar da remoção das arestas.
         const inDegree = new Map<NodeId, number>();
         ordered.forEach((node) => inDegree.set(node.id, 0));
         graph.edges.forEach((edge) => {

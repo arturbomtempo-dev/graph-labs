@@ -10,11 +10,6 @@ import { requireEdges, requireNodes } from './shared';
 
 export const arcKey = (from: NodeId, to: NodeId) => `${from}>${to}`;
 
-/**
- * Rede residual G'(f) do deck 16: para e = (v, w) com f(e) < u(e) existe a aresta
- * direta (v, w) com capacidade u_r(e) = u(e) − f(e); para f(e) > 0 existe a aresta
- * reversa (w, v) com capacidade f(e).
- */
 export interface ResidualNetwork {
     capacity: Map<string, number>;
     residual: Map<string, number>;
@@ -107,7 +102,6 @@ export function residualTable(graph: Graph, network: ResidualNetwork): TraceTabl
     };
 }
 
-/** Reconstrói o caminho a partir do mapa de predecessores da busca. */
 function rebuild(parent: Map<NodeId, NodeId | null>, sink: NodeId): NodeId[] {
     const path: NodeId[] = [];
     let cursor: NodeId | null = sink;
@@ -118,7 +112,6 @@ function rebuild(parent: Map<NodeId, NodeId | null>, sink: NodeId): NodeId[] {
     return path;
 }
 
-/** Caminho aumentante arbitrário, obtido por busca em profundidade (Ford-Fulkerson). */
 export function augmentingPathByDepth(
     network: ResidualNetwork,
     source: NodeId,
@@ -133,7 +126,7 @@ export function augmentingPathByDepth(
         if (visited.has(current)) continue;
         visited.add(current);
         if (current === sink) return rebuild(parent, sink);
-        // Empilha em ordem inversa para desempilhar a vizinhança em ordem alfabética.
+        
         [...network.neighboursOf(current)].reverse().forEach((neighbour) => {
             if (visited.has(neighbour)) return;
             parent.set(neighbour, current);
@@ -143,7 +136,6 @@ export function augmentingPathByDepth(
     return null;
 }
 
-/** Caminho aumentante com o menor número de arestas, obtido por busca em largura (Edmonds-Karp). */
 export function augmentingPathByBreadth(
     network: ResidualNetwork,
     source: NodeId,
@@ -166,7 +158,6 @@ export function augmentingPathByBreadth(
     return visited.has(sink) ? rebuild(parent, sink) : null;
 }
 
-/** Conjunto S do corte s-t: vértices alcançáveis a partir de s na rede residual. */
 export function reachableFromSource(network: ResidualNetwork, source: NodeId): Set<NodeId> {
     const visited = new Set<NodeId>([source]);
     const queue: NodeId[] = [source];

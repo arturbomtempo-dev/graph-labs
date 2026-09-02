@@ -43,7 +43,6 @@ export const prim: AlgorithmDefinition = {
         const adjacency = buildAdjacency(graph);
         const labels = nodeLabelMap(graph);
 
-        // Menor custo conhecido de uma aresta que liga o vértice ao conjunto V(T).
         const key = new Map<NodeId, number>();
         const parent = new Map<NodeId, NodeId | null>();
         const parentEdge = new Map<NodeId, string | null>();

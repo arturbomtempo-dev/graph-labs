@@ -52,9 +52,8 @@ export const edmondsMatching: AlgorithmDefinition = {
                     (indexOf.get(edge.source) === b && indexOf.get(edge.target) === a)
             );
 
-        // match[v]: parceiro de v em M, ou −1 se v estiver exposto.
         const match = new Array<number>(size).fill(-1);
-        // Estruturas da floresta M-alternante, reiniciadas a cada busca.
+
         const parent = new Array<number>(size).fill(-1);
         const base = new Array<number>(size).fill(0);
 
@@ -117,7 +116,6 @@ export const edmondsMatching: AlgorithmDefinition = {
             metrics: metrics(),
         });
 
-        /** Base comum mais profunda das duas cadeias alternantes que partem de a e de b. */
         const lowestCommonBase = (a: number, b: number): number => {
             const visited = new Array<boolean>(size).fill(false);
             let cursor = a;
@@ -147,7 +145,6 @@ export const edmondsMatching: AlgorithmDefinition = {
             }
         };
 
-        /** Encontra_Caminho_Aumentante: devolve o vértice exposto que fecha o caminho, ou −1. */
         const findAugmentingPath = (root: number): number => {
             const even = new Array<boolean>(size).fill(false);
             parent.fill(-1);
@@ -168,7 +165,6 @@ export const edmondsMatching: AlgorithmDefinition = {
                         to === root || (match[to] !== -1 && parent[match[to]] !== -1);
 
                     if (closesBlossom) {
-                        // Aresta entre dois vértices a distância par da raiz: há um botão.
                         const blossomBase = lowestCommonBase(v, to);
                         const mark = new Array<boolean>(size).fill(false);
                         markPath(v, blossomBase, to, mark);
@@ -224,7 +220,6 @@ export const edmondsMatching: AlgorithmDefinition = {
                         return to;
                     }
 
-                    // Adicionar_a_Floresta: entram w e seu parceiro x em M.
                     const partner = match[to];
                     even[partner] = true;
                     queue.push(partner);
@@ -246,7 +241,6 @@ export const edmondsMatching: AlgorithmDefinition = {
             return -1;
         };
 
-        /** M ← M ⊕ EP: inverte as arestas ao longo do caminho M-aumentante. */
         const augment = (endpoint: number): string[] => {
             const changed: string[] = [];
             let v = endpoint;

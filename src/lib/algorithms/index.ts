@@ -17,7 +17,6 @@ import { prim } from './prim';
 import { topologicalDfs } from './topologicalDfs';
 import { welshPowell } from './welshPowell';
 
-/** Ordem dos decks da disciplina: 07/08 → 09 → 10 → 12 → 13-15 → 16-17 → 18 → 19 → 21. */
 export const algorithms: AlgorithmDefinition[] = [
     depthFirstSearch,
     breadthFirstSearch,

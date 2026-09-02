@@ -27,7 +27,6 @@ export const breadthFirstSearch: AlgorithmDefinition = {
         const labels = nodeLabelMap(graph);
         const root = startId as NodeId;
 
-        // L[v]: índice de descoberta (0 = ainda não marcado); nível[v]: distância à raiz.
         const index = new Map<NodeId, number>();
         const level = new Map<NodeId, number>();
         const parent = new Map<NodeId, NodeId | null>();

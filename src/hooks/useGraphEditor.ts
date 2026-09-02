@@ -161,8 +161,7 @@ export function useGraphEditor() {
                         { id: createEdgeId(), source, target, weight, directed },
                     ],
                 };
-                // A sugestão de posicionamento entra no mesmo passo do histórico que a aresta,
-                // então um único desfazer volta tudo.
+
                 return autoArrange ? (refineLayout(next) ?? next) : next;
             });
             return created;
@@ -170,7 +169,6 @@ export function useGraphEditor() {
         [apply, autoArrange]
     );
 
-    /** Reorganiza sob demanda, sem depender de uma nova aresta. */
     const arrangeNow = useCallback(() => {
         let changed = false;
         apply((current) => {

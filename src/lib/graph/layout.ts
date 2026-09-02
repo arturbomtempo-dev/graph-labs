@@ -2,28 +2,26 @@ import type { Graph, GraphEdge, NodeId } from './types';
 
 export const NODE_RADIUS = 24;
 
-/** Folga mínima entre o traço de uma aresta e um vértice que não é extremo dela. */
 const NODE_EDGE_CLEARANCE = NODE_RADIUS + 12;
-/** Distância mínima entre os centros de dois vértices. */
+
 const NODE_NODE_CLEARANCE = NODE_RADIUS * 2 + 16;
-/** Abaixo deste ângulo, duas arestas incidentes ao mesmo vértice se confundem visualmente. */
+
 const MIN_INCIDENT_ANGLE = 16;
 
 const WEIGHT_CROSSING = 10;
 const WEIGHT_NODE_ON_EDGE = 14;
 const WEIGHT_NODE_OVERLAP = 9;
 const WEIGHT_TIGHT_ANGLE = 5;
-/** Penalidade por pixel afastado da posição original: mantém a sugestão perto do desenho do usuário. */
+
 const WEIGHT_DRIFT = 0.01;
 
-/** Acima destes limites a busca local fica cara demais para rodar a cada aresta inserida. */
 const MAX_NODES = 40;
 const MAX_EDGES = 90;
 
 const PASSES = 4;
 const CANDIDATE_RADII = [34, 68, 116];
 const CANDIDATE_ANGLES = 10;
-/** Nenhum vértice se afasta mais que isso de onde o usuário o colocou. */
+
 const MAX_DRIFT = 260;
 
 export interface Point {
@@ -54,7 +52,6 @@ const sharesEndpoint = (a: GraphEdge, b: GraphEdge) =>
     a.target === b.source ||
     a.target === b.target;
 
-/** Duas arestas entre o mesmo par de vértices são desenhadas curvadas, então não se sobrepõem. */
 const sameEndpoints = (a: GraphEdge, b: GraphEdge) =>
     (a.source === b.source && a.target === b.target) ||
     (a.source === b.target && a.target === b.source);
@@ -63,7 +60,6 @@ function turn(origin: Point, a: Point, b: Point): number {
     return (a.x - origin.x) * (b.y - origin.y) - (a.y - origin.y) * (b.x - origin.x);
 }
 
-/** Cruzamento próprio: os segmentos se atravessam fora de seus extremos. */
 function segmentsCross(a1: Point, a2: Point, b1: Point, b2: Point): boolean {
     const d1 = turn(b1, b2, a1);
     const d2 = turn(b1, b2, a2);
@@ -81,7 +77,6 @@ function pointSegmentDistance(p: Point, a: Point, b: Point): number {
     return Math.hypot(p.x - (a.x + t * vx), p.y - (a.y + t * vy));
 }
 
-/** Ângulo, em graus, entre os segmentos centro→a e centro→b. */
 function angleAt(center: Point, a: Point, b: Point): number {
     const ax = a.x - center.x;
     const ay = a.y - center.y;
@@ -106,7 +101,6 @@ function positionsOf(graph: Graph): Positions {
     return new Map(graph.nodes.map((node) => [node.id, { x: node.x, y: node.y }]));
 }
 
-/** Quantifica o quanto o desenho atual atrapalha a leitura do grafo. */
 export function evaluateLayout(graph: Graph, positions: Positions): LayoutIssues {
     const at = (id: NodeId) => positions.get(id) as Point;
     const incident = incidenceMap(graph);
@@ -171,11 +165,6 @@ export function evaluateLayout(graph: Graph, positions: Positions): LayoutIssues
     };
 }
 
-/**
- * Soma apenas as penalidades que envolvem `nodeId`. Como os demais termos não mudam
- * quando só esse vértice se move, comparar este custo entre posições candidatas equivale
- * a comparar a pontuação do desenho inteiro, mas a um custo muito menor.
- */
 function nodeCost(
     nodeId: NodeId,
     candidate: Point,
@@ -188,7 +177,6 @@ function nodeCost(
     const own = incident.get(nodeId) ?? [];
     let cost = 0;
 
-    // Cruzamentos entre as arestas incidentes e as demais.
     own.forEach((edge) => {
         const a = at(edge.source);
         const b = at(edge.target);
@@ -198,7 +186,6 @@ function nodeCost(
         });
     });
 
-    // O próprio vértice pousando sobre arestas que não são dele.
     graph.edges.forEach((edge) => {
         if (touches(edge, nodeId)) return;
         if (
@@ -208,7 +195,6 @@ function nodeCost(
         }
     });
 
-    // Outros vértices pousando sobre as arestas deste.
     own.forEach((edge) => {
         const a = at(edge.source);
         const b = at(edge.target);
@@ -225,7 +211,6 @@ function nodeCost(
         if (distance(candidate, at(node.id)) < NODE_NODE_CLEARANCE) cost += WEIGHT_NODE_OVERLAP;
     });
 
-    // Ângulos apertados no próprio vértice.
     for (let i = 0; i < own.length; i += 1) {
         for (let j = i + 1; j < own.length; j += 1) {
             if (sameEndpoints(own[i], own[j])) continue;
@@ -238,7 +223,6 @@ function nodeCost(
         }
     }
 
-    // Ângulos apertados criados nos vizinhos por causa deste vértice.
     own.forEach((edge) => {
         const neighbour = otherEnd(edge, nodeId);
         (incident.get(neighbour) ?? []).forEach((other) => {
@@ -251,11 +235,6 @@ function nodeCost(
     return cost + distance(candidate, origin) * WEIGHT_DRIFT;
 }
 
-/**
- * Sugere posições melhores para os vértices a partir das atuais, por busca local.
- * Devolve `null` quando o desenho já está legível, quando o grafo é grande demais
- * para reorganizar sem travar, ou quando nenhuma tentativa melhorou a pontuação.
- */
 export function refineLayout(graph: Graph): Graph | null {
     if (graph.nodes.length < 3 || graph.edges.length === 0) return null;
     if (graph.nodes.length > MAX_NODES || graph.edges.length > MAX_EDGES) return null;
@@ -275,7 +254,6 @@ export function refineLayout(graph: Graph): Graph | null {
     for (let pass = 0; pass < PASSES; pass += 1) {
         let improved = false;
 
-        // Trata primeiro os vértices que mais atrapalham a leitura.
         const order = [...graph.nodes].sort(
             (a, b) =>
                 costOf(b.id, positions.get(b.id) as Point) -
@@ -290,7 +268,6 @@ export function refineLayout(graph: Graph): Graph | null {
 
             for (const radius of CANDIDATE_RADII) {
                 for (let step = 0; step < CANDIDATE_ANGLES; step += 1) {
-                    // O deslocamento angular desalinha os anéis e amplia a variedade de tentativas.
                     const angle = (2 * Math.PI * step) / CANDIDATE_ANGLES + radius * 0.7;
                     const candidate = {
                         x: Math.round(current.x + Math.cos(angle) * radius),

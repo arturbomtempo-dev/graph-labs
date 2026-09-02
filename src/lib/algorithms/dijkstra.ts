@@ -55,7 +55,7 @@ export const dijkstra: AlgorithmDefinition = {
         const distance = new Map<NodeId, number>();
         const pred = new Map<NodeId, NodeId | null>();
         const predEdge = new Map<NodeId, string | null>();
-        // S: conjunto dos vértices já "fechados".
+
         const closed = new Set<NodeId>();
 
         graph.nodes.forEach((node) => {

@@ -15,7 +15,6 @@ function otherEnd(edge: GraphEdge, node: NodeId): NodeId {
     return edge.source === node ? edge.target : edge.source;
 }
 
-/** Vértices alcançáveis a partir de `from` usando apenas as arestas de `edges`. */
 function reachable(edges: GraphEdge[], from: NodeId): Set<NodeId> {
     const seen = new Set<NodeId>([from]);
     const stack = [from];
@@ -32,7 +31,6 @@ function reachable(edges: GraphEdge[], from: NodeId): Set<NodeId> {
     return seen;
 }
 
-/** A aresta é ponte em G' se sua remoção desconecta w de v dentro das arestas restantes. */
 function isBridge(edges: GraphEdge[], edge: GraphEdge, from: NodeId): boolean {
     const remaining = edges.filter((candidate) => candidate.id !== edge.id);
     const target = otherEnd(edge, from);
@@ -105,13 +103,11 @@ export const fleury: AlgorithmDefinition = {
         const withEdges = ordered.filter((node) => degreeOf(graph.edges, node.id) > 0);
         const isEulerian = odd.length === 0;
 
-        // Passo 3: escolher raiz de grau ímpar, se houver.
         const start =
             startId && withEdges.some((node) => node.id === startId)
                 ? startId
                 : (odd[0]?.id ?? withEdges[0]?.id ?? ordered[0].id);
 
-        // Passo 2: G' = (V', E') começa como cópia de G.
         let available = [...graph.edges];
         const trail: NodeId[] = [start];
         const usedEdges: string[] = [];
@@ -205,11 +201,9 @@ export const fleury: AlgorithmDefinition = {
             let reason: string;
 
             if (incident.length === 1) {
-                // Passo 4b: única aresta disponível, atravessa-se mesmo sendo ponte.
                 chosen = incident[0];
                 reason = `${labels.get(current)} tem apenas uma aresta disponível em G', então ela é percorrida mesmo sendo ponte.`;
             } else {
-                // Passo 4a: escolher uma aresta que não seja ponte em G'.
                 const bridges = incident.filter((edge) => isBridge(available, edge, current));
                 const safe = incident.find((edge) => !bridges.includes(edge));
                 chosen = safe ?? incident[0];

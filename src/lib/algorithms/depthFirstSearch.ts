@@ -6,7 +6,6 @@ import { labelOf, requireNodes, requireStart } from './shared';
 type Color = 'white' | 'gray' | 'black';
 type EdgeKind = 'Árvore' | 'Retorno' | 'Avanço' | 'Cruzamento';
 
-/** Par ordenado (v, w) em grafo direcionado, não ordenado {v, w} caso contrário. */
 const pairOf = (directed: boolean, from: string, to: string) =>
     directed ? `(${from}, ${to})` : `{${from}, ${to}}`;
 
@@ -32,7 +31,6 @@ export const depthFirstSearch: AlgorithmDefinition = {
         const labels = nodeLabelMap(graph);
 
         const color = new Map<NodeId, Color>();
-        // TD[v] e TT[v]: tempos de descoberta e de término marcados pelo contador global t.
         const discovery = new Map<NodeId, number>();
         const finish = new Map<NodeId, number>();
         const parent = new Map<NodeId, NodeId | null>();
@@ -157,8 +155,6 @@ export const depthFirstSearch: AlgorithmDefinition = {
                 }
 
                 if (!classification.has(entry.edge.id)) {
-                    // Em grafo não direcionado só existem arestas de árvore e de retorno: a aresta
-                    // para um vértice já explorado (preto) já foi classificada pela outra extremidade.
                     if (!entry.edge.directed && neighbourColor === 'black') continue;
 
                     const kind: EdgeKind = !entry.edge.directed

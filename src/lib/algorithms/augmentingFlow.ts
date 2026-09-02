@@ -12,17 +12,12 @@ import {
 import { labelOf } from './shared';
 
 export interface AugmentingMethodOptions {
-    /** Critério de escolha do caminho aumentante, que é o que distingue Ford-Fulkerson de Edmonds-Karp. */
     findPath: (network: ResidualNetwork, source: NodeId, sink: NodeId) => NodeId[] | null;
-    /** Frase que explica como o caminho daquela iteração foi escolhido. */
+
     explainChoice: (pathLabel: string, edgeCount: number) => string;
     methodName: string;
 }
 
-/**
- * Laço comum aos métodos de Ford-Fulkerson e de Edmonds-Karp: enquanto existir caminho
- * aumentante P em G'(f), envia-se o gargalo δ por P e atualiza-se a rede residual.
- */
 export function runAugmentingMethod(
     graph: Graph,
     source: NodeId,

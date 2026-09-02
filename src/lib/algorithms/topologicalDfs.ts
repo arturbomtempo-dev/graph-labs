@@ -3,7 +3,6 @@ import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, NodeId, TraceTable } from '../graph/types';
 import { requireEdges, requireNodes } from './shared';
 
-// Marca[v]: 0 = desmarcado, 1 = marca temporária, 2 = marca permanente.
 type Mark = 0 | 1 | 2;
 
 const markLabel: Record<Mark, string> = {
@@ -143,7 +142,6 @@ export const topologicalDfs: AlgorithmDefinition = {
                 ...snapshot(current),
             });
 
-            // Renumera os selos: a posição de cada vértice muda a cada inserção no início.
             result.forEach((id, position) => builder.setNodeBadge(id, String(position + 1)));
         };
 

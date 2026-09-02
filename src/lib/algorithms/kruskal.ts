@@ -37,8 +37,6 @@ export const kruskal: AlgorithmDefinition = {
         const builder = createTraceBuilder(graph);
         const labels = nodeLabelMap(graph);
 
-        // Estrutura auxiliar que responde, em tempo quase constante, se dois vértices já
-        // estão ligados por arestas de E(T), isto é, se a aresta analisada formaria ciclo.
         const parent = new Map<NodeId, NodeId>();
         const rank = new Map<NodeId, number>();
         graph.nodes.forEach((node) => {

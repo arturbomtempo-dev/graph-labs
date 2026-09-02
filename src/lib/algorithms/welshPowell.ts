@@ -34,7 +34,6 @@ export const welshPowell: AlgorithmDefinition = {
         const alphabetical = sortedNodes(graph);
         const degree = undirectedDegrees(adjacency, alphabetical);
 
-        // Passo 1: ordem não crescente de graus (empate resolvido pelo rótulo, para ser determinístico).
         const order = [...alphabetical].sort((a, b) => {
             const byDegree = (degree.get(b.id) ?? 0) - (degree.get(a.id) ?? 0);
             return byDegree !== 0 ? byDegree : compareLabels(a.label, b.label);

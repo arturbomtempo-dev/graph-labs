@@ -25,7 +25,6 @@ export const floydWarshall: AlgorithmDefinition = {
         const index = new Map<NodeId, number>(nodes.map((node, position) => [node.id, position]));
         const size = nodes.length;
 
-        // dist[i][j] e pred[i][j]: pred guarda o penúltimo vértice do caminho de i para j.
         const distance: number[][] = nodes.map((_, i) =>
             nodes.map((__, j) => (i === j ? 0 : Number.POSITIVE_INFINITY))
         );

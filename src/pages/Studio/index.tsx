@@ -77,7 +77,6 @@ export function Studio() {
         return orderedNodeIds.find((id) => id !== resolvedStartId) ?? null;
     }, [endId, nodeIds, algorithm.needsEnd, orderedNodeIds, resolvedStartId]);
 
-    // Fleury aceita uma raiz opcional; os métodos de caminho mínimo aceitam um destino opcional.
     const isFlow = algorithm.category === 'Fluxo máximo';
     const usesStart =
         algorithm.needsStart ||

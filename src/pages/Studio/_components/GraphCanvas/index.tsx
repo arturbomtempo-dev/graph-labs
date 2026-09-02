@@ -84,6 +84,8 @@ export function GraphCanvas({
     const dragRef = useRef<DragState | null>(null);
     const pointersRef = useRef(new Map<number, Point>());
     const pinchRef = useRef<{ distance: number; scale: number } | null>(null);
+    const fittedRef = useRef(false);
+    const fitRef = useRef<() => void>(() => {});
 
     const [view, setView] = useState<{ x: number; y: number; scale: number }>({
         x: 40,
@@ -121,11 +123,27 @@ export function GraphCanvas({
             x: rect.width / 2 - ((bounds.minX + bounds.maxX) / 2) * clamped,
             y: rect.height / 2 - ((bounds.minY + bounds.maxY) / 2) * clamped,
         });
+        fittedRef.current = true;
     }, [graph]);
 
     useLayoutEffect(() => {
-        fitToContent();
-    }, [autoFitKey, fitToContent]);
+        fitRef.current = fitToContent;
+    }, [fitToContent]);
+
+    useLayoutEffect(() => {
+        fitRef.current();
+    }, [autoFitKey]);
+
+    useEffect(() => {
+        const element = containerRef.current;
+        if (!element || typeof ResizeObserver === 'undefined') return;
+        const observer = new ResizeObserver(() => {
+            if (fittedRef.current) return;
+            fitRef.current();
+        });
+        observer.observe(element);
+        return () => observer.disconnect();
+    }, []);
 
     useEffect(() => {
         const element = svgRef.current;

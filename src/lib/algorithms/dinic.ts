@@ -12,7 +12,6 @@ import {
 } from './flowShared';
 import { labelOf } from './shared';
 
-/** dist(v): menor distância geodésica entre a fonte e v na rede residual, em número de arestas. */
 function levels(network: ResidualNetwork, source: NodeId): Map<NodeId, number> {
     const dist = new Map<NodeId, number>([[source, 0]]);
     const queue: NodeId[] = [source];
@@ -96,7 +95,6 @@ export const dinic: AlgorithmDefinition = {
         while (phase < phaseLimit) {
             const dist = levels(network, source);
 
-            // As arestas de GL são as (v, w) de G′(f) com dist(w) = dist(v) + 1.
             const inLevelGraph = (from: NodeId, to: NodeId) =>
                 network.residualOf(from, to) > 0 &&
                 dist.has(from) &&
@@ -175,7 +173,6 @@ export const dinic: AlgorithmDefinition = {
                 ],
             });
 
-            // Fluxo de bloqueio: satura caminhos de s a t em GL até não restar nenhum.
             let blocking = 0;
             let pathsInPhase = 0;
             let guard = 0;
@@ -185,7 +182,6 @@ export const dinic: AlgorithmDefinition = {
                 guard += 1;
                 if (guard > guardLimit) break;
 
-                // Busca em profundidade restrita a GL.
                 const parent = new Map<NodeId, NodeId | null>([[source, null]]);
                 const visited = new Set<NodeId>([source]);
                 const stack: NodeId[] = [source];

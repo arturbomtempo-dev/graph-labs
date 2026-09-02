@@ -3,7 +3,7 @@ import {
     buildReverseAdjacency,
     hasUndirectedEdges,
     nodeLabelMap,
-    sortedNodes,
+    orderedNodes,
 } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, NodeId, TraceTable } from '../graph/types';
@@ -19,7 +19,7 @@ export const kosaraju: AlgorithmDefinition = {
     complexity: 'O(n + m)',
     needsStart: false,
     needsEnd: false,
-    constraints: ['Exige grafo direcionado', 'Ignora os custos das arestas'],
+    constraints: ['Exige grafo direcionado', 'Ignora os pesos das arestas'],
     validate: (context) => {
         const errors = [...requireNodes(context), ...requireEdges(context)];
         if (hasUndirectedEdges(context.graph)) {
@@ -29,10 +29,10 @@ export const kosaraju: AlgorithmDefinition = {
         }
         return errors;
     },
-    run: ({ graph }) => {
+    run: ({ graph, order }) => {
         const builder = createTraceBuilder(graph);
-        const adjacency = buildAdjacency(graph);
-        const reverse = buildReverseAdjacency(graph);
+        const adjacency = buildAdjacency(graph, order);
+        const reverse = buildReverseAdjacency(graph, order);
         const labels = nodeLabelMap(graph);
 
         const finishOrder: NodeId[] = [];
@@ -106,7 +106,7 @@ export const kosaraju: AlgorithmDefinition = {
             });
         };
 
-        sortedNodes(graph).forEach((node) => {
+        orderedNodes(graph, order).forEach((node) => {
             if (!visitedFirst.has(node.id)) firstPass(node.id);
         });
 

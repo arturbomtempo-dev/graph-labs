@@ -4,7 +4,9 @@ import {
     formatWeight,
     hasNegativeWeights,
     nodeLabelMap,
+    orderedNodes,
     sortedNodes,
+    weightOf,
 } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, NodeId } from '../graph/types';
@@ -30,7 +32,7 @@ export const dijkstra: AlgorithmDefinition = {
     needsEnd: false,
     constraints: [
         'Aceita arestas direcionadas e não direcionadas',
-        'Exige custos não negativos',
+        'Exige pesos não negativos',
         'Baseia-se no princípio da relaxação',
     ],
     validate: (context) => {
@@ -41,14 +43,14 @@ export const dijkstra: AlgorithmDefinition = {
         ];
         if (hasNegativeWeights(context.graph)) {
             errors.push(
-                'O método de Dijkstra falha com arestas de custo negativo: use Bellman-Ford. Reponderar, adicionando uma constante a todas as arestas, também pode falhar.'
+                'O método de Dijkstra falha com arestas de peso negativo: use Bellman-Ford. Reponderar, adicionando uma constante a todas as arestas, também pode falhar.'
             );
         }
         return errors;
     },
-    run: ({ graph, startId, endId }) => {
+    run: ({ graph, startId, endId, order }) => {
         const builder = createTraceBuilder(graph);
-        const adjacency = buildAdjacency(graph);
+        const adjacency = buildAdjacency(graph, order);
         const labels = nodeLabelMap(graph);
         const root = startId as NodeId;
 
@@ -98,7 +100,7 @@ export const dijkstra: AlgorithmDefinition = {
         while (closed.size < graph.nodes.length) {
             let candidate: NodeId | null = null;
             let best = Number.POSITIVE_INFINITY;
-            sortedNodes(graph).forEach((node) => {
+            orderedNodes(graph, order).forEach((node) => {
                 if (closed.has(node.id)) return;
                 const value = distance.get(node.id) ?? Number.POSITIVE_INFINITY;
                 if (value < best) {
@@ -128,14 +130,14 @@ export const dijkstra: AlgorithmDefinition = {
 
             builder.commit({
                 title: `Fecha ${labels.get(current)} com dist = ${formatWeight(best)}`,
-                description: `${labels.get(current)} é o vértice não fechado com o menor valor de dist, portanto entra em S. Como não há custos negativos, dist[${labels.get(current)}] já é o custo definitivo do caminho mínimo desde a raiz.`,
+                description: `${labels.get(current)} é o vértice não fechado com o menor valor de dist, portanto entra em S. Como não há pesos negativos, dist[${labels.get(current)}] já é o peso definitivo do caminho mínimo desde a raiz.`,
                 tables: [table(current)],
                 lists: [openList()],
             });
 
             for (const entry of adjacency.get(current) ?? []) {
                 if (closed.has(entry.to)) continue;
-                const relaxed = best + entry.edge.weight;
+                const relaxed = best + weightOf(entry.edge);
                 const currentDistance = distance.get(entry.to) ?? Number.POSITIVE_INFINITY;
                 builder.setEdge(entry.edge.id, 'active');
 
@@ -147,14 +149,14 @@ export const dijkstra: AlgorithmDefinition = {
                     builder.setNodeBadge(entry.to, formatWeight(relaxed));
                     builder.commit({
                         title: `Aresta tensa (${labels.get(current)}, ${labels.get(entry.to)}): relaxada`,
-                        description: `dist[${labels.get(entry.to)}] = ${formatDistance(currentDistance)} > dist[${labels.get(current)}] + d = ${formatWeight(best)} + ${formatWeight(entry.edge.weight)} = ${formatWeight(relaxed)}. Logo dist[${labels.get(entry.to)}] ← ${formatWeight(relaxed)} e pred[${labels.get(entry.to)}] ← ${labels.get(current)}.`,
+                        description: `dist[${labels.get(entry.to)}] = ${formatDistance(currentDistance)} > dist[${labels.get(current)}] + d = ${formatWeight(best)} + ${formatWeight(weightOf(entry.edge))} = ${formatWeight(relaxed)}. Logo dist[${labels.get(entry.to)}] ← ${formatWeight(relaxed)} e pred[${labels.get(entry.to)}] ← ${labels.get(current)}.`,
                         tables: [table(entry.to)],
                         lists: [openList()],
                     });
                 } else {
                     builder.commit({
                         title: `Aresta (${labels.get(current)}, ${labels.get(entry.to)}) não está tensa`,
-                        description: `dist[${labels.get(current)}] + d = ${formatWeight(best)} + ${formatWeight(entry.edge.weight)} = ${formatWeight(relaxed)} não é menor que dist[${labels.get(entry.to)}] = ${formatDistance(currentDistance)}, então nada muda.`,
+                        description: `dist[${labels.get(current)}] + d = ${formatWeight(best)} + ${formatWeight(weightOf(entry.edge))} = ${formatWeight(relaxed)} não é menor que dist[${labels.get(entry.to)}] = ${formatDistance(currentDistance)}, então nada muda.`,
                         tables: [table(entry.to)],
                         lists: [openList()],
                     });
@@ -172,7 +174,7 @@ export const dijkstra: AlgorithmDefinition = {
                         `${node.label} = ${formatDistance(distance.get(node.id) ?? Number.POSITIVE_INFINITY)}`
                 )
                 .join(', ')}.`,
-            'dist[ ] guarda apenas os custos dos caminhos mínimos; os caminhos em si são recuperados percorrendo a lista de predecessores pred[ ].',
+            'dist[ ] guarda apenas os pesos dos caminhos mínimos; os caminhos em si são recuperados percorrendo a lista de predecessores pred[ ].',
         ];
 
         if (endId && Number.isFinite(distance.get(endId) ?? Infinity)) {
@@ -181,7 +183,7 @@ export const dijkstra: AlgorithmDefinition = {
                 edgesAlongPath(graph, path).forEach((edgeId) => builder.setEdge(edgeId, 'path'));
                 path.forEach((nodeId) => builder.setNode(nodeId, 'path'));
                 conclusions.push(
-                    `Caminho mínimo até ${labelOf(graph, endId)}, obtido por pred[ ]: ${path.map((id) => labels.get(id)).join(' → ')} (custo ${formatDistance(distance.get(endId) ?? Infinity)}).`
+                    `Caminho mínimo até ${labelOf(graph, endId)}, obtido por pred[ ]: ${path.map((id) => labels.get(id)).join(' → ')} (peso ${formatDistance(distance.get(endId) ?? Infinity)}).`
                 );
             }
         }

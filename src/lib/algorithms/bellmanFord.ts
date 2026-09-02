@@ -1,9 +1,10 @@
 import {
-    compareLabels,
     formatDistance,
     formatWeight,
     nodeLabelMap,
+    orderComparator,
     sortedNodes,
+    weightOf,
 } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, GraphEdge, NodeId } from '../graph/types';
@@ -34,16 +35,16 @@ export const bellmanFord: AlgorithmDefinition = {
     needsStart: true,
     needsEnd: false,
     constraints: [
-        'Admite arestas de custo negativo',
-        'Não admite ciclo de custo negativo',
-        'Detecta ciclo de custo negativo alcançável a partir da origem',
+        'Admite arestas de peso negativo',
+        'Não admite ciclo de peso negativo',
+        'Detecta ciclo de peso negativo alcançável a partir da origem',
     ],
     validate: (context) => [
         ...requireNodes(context),
         ...requireEdges(context),
         ...requireStart(context),
     ],
-    run: ({ graph, startId, endId }) => {
+    run: ({ graph, startId, endId, order }) => {
         const builder = createTraceBuilder(graph);
         const labels = nodeLabelMap(graph);
         const source = startId as NodeId;
@@ -53,10 +54,10 @@ export const bellmanFord: AlgorithmDefinition = {
             arcs.push({ edge, from: edge.source, to: edge.target });
             if (!edge.directed) arcs.push({ edge, from: edge.target, to: edge.source });
         });
+        const compare = orderComparator(graph, order);
         arcs.sort((a, b) => {
-            const bySource = compareLabels(labels.get(a.from) ?? '', labels.get(b.from) ?? '');
-            if (bySource !== 0) return bySource;
-            return compareLabels(labels.get(a.to) ?? '', labels.get(b.to) ?? '');
+            const bySource = compare(a.from, b.from);
+            return bySource !== 0 ? bySource : compare(a.to, b.to);
         });
 
         const distance = new Map<NodeId, number>();
@@ -84,7 +85,7 @@ export const bellmanFord: AlgorithmDefinition = {
             variant: 'queue' as const,
             items: arcs.map(
                 (arc) =>
-                    `${labels.get(arc.from)}→${labels.get(arc.to)} (${formatWeight(arc.edge.weight)})`
+                    `${labels.get(arc.from)}→${labels.get(arc.to)} (${formatWeight(weightOf(arc.edge))})`
             ),
         });
 
@@ -112,7 +113,7 @@ export const bellmanFord: AlgorithmDefinition = {
                 const fromDistance = distance.get(arc.from) ?? Number.POSITIVE_INFINITY;
                 if (!Number.isFinite(fromDistance)) continue;
 
-                const candidate = fromDistance + arc.edge.weight;
+                const candidate = fromDistance + weightOf(arc.edge);
                 const currentDistance = distance.get(arc.to) ?? Number.POSITIVE_INFINITY;
                 builder.resetEdgesWithState('active', 'idle');
                 builder.setEdge(arc.edge.id, 'active');
@@ -126,7 +127,7 @@ export const bellmanFord: AlgorithmDefinition = {
                     builder.setNodeBadge(arc.to, formatWeight(candidate));
                     builder.commit({
                         title: `Aresta tensa (${labels.get(arc.from)}, ${labels.get(arc.to)}): relaxada`,
-                        description: `dist[${labels.get(arc.to)}] = ${formatDistance(currentDistance)} > dist[${labels.get(arc.from)}] + d = ${formatWeight(fromDistance)} + ${formatWeight(arc.edge.weight)} = ${formatWeight(candidate)}. Logo dist[${labels.get(arc.to)}] ← ${formatWeight(candidate)} e pred[${labels.get(arc.to)}] ← ${labels.get(arc.from)}.`,
+                        description: `dist[${labels.get(arc.to)}] = ${formatDistance(currentDistance)} > dist[${labels.get(arc.from)}] + d = ${formatWeight(fromDistance)} + ${formatWeight(weightOf(arc.edge))} = ${formatWeight(candidate)}. Logo dist[${labels.get(arc.to)}] ← ${formatWeight(candidate)} e pred[${labels.get(arc.to)}] ← ${labels.get(arc.from)}.`,
                         tables: [table(arc.to)],
                         lists: [arcList()],
                         metrics: [{ label: 'Iteração', value: `${round} / ${rounds}` }],
@@ -153,9 +154,9 @@ export const bellmanFord: AlgorithmDefinition = {
         });
 
         builder.commit({
-            title: 'Verificação de ciclo de custo negativo',
+            title: 'Verificação de ciclo de peso negativo',
             description:
-                'Uma iteração adicional é executada: se alguma aresta ainda estiver tensa, algum caminho teria n arestas ou mais, o que só é possível na presença de ciclo de custo negativo alcançável a partir da origem.',
+                'Uma iteração adicional é executada: se alguma aresta ainda estiver tensa, algum caminho teria n arestas ou mais, o que só é possível na presença de ciclo de peso negativo alcançável a partir da origem.',
             tables: [table()],
         });
 
@@ -163,14 +164,14 @@ export const bellmanFord: AlgorithmDefinition = {
         for (const arc of arcs) {
             const fromDistance = distance.get(arc.from) ?? Number.POSITIVE_INFINITY;
             if (!Number.isFinite(fromDistance)) continue;
-            const candidate = fromDistance + arc.edge.weight;
+            const candidate = fromDistance + weightOf(arc.edge);
             if (candidate < (distance.get(arc.to) ?? Number.POSITIVE_INFINITY)) {
                 negativeArcs.push(arc);
                 builder.setEdge(arc.edge.id, 'reject');
                 builder.setNode(arc.to, 'reject');
                 builder.commit({
-                    title: `Ciclo de custo negativo detectado em (${labels.get(arc.from)}, ${labels.get(arc.to)})`,
-                    description: `A aresta continua tensa (${formatWeight(fromDistance)} + ${formatWeight(arc.edge.weight)} < ${formatDistance(distance.get(arc.to) ?? Infinity)}), o que só é possível se houver ciclo de custo negativo alcançável a partir da origem.`,
+                    title: `Ciclo de peso negativo detectado em (${labels.get(arc.from)}, ${labels.get(arc.to)})`,
+                    description: `A aresta continua tensa (${formatWeight(fromDistance)} + ${formatWeight(weightOf(arc.edge))} < ${formatDistance(distance.get(arc.to) ?? Infinity)}), o que só é possível se houver ciclo de peso negativo alcançável a partir da origem.`,
                     tables: [table(arc.to)],
                 });
             }
@@ -180,10 +181,10 @@ export const bellmanFord: AlgorithmDefinition = {
 
         if (negativeArcs.length > 0) {
             conclusions.push(
-                'Existe ciclo de custo negativo alcançável a partir da origem: para os vértices afetados não há caminho mínimo, pois é sempre possível reduzir o custo dando mais uma volta no ciclo.'
+                'Existe ciclo de peso negativo alcançável a partir da origem: para os vértices afetados não há caminho mínimo, pois é sempre possível reduzir o peso dando mais uma volta no ciclo.'
             );
             builder.commit({
-                title: 'Resultado inválido por ciclo de custo negativo',
+                title: 'Resultado inválido por ciclo de peso negativo',
                 description: `${negativeArcs.length} aresta(s) continuam tensas após ${rounds} iteração(ões).`,
                 tables: [table()],
             });
@@ -197,7 +198,7 @@ export const bellmanFord: AlgorithmDefinition = {
                     .join(', ')}.`
             );
             conclusions.push(
-                `A última iteração com aresta tensa foi a de número ${lastRoundWithChange || 1}, de um total de ${rounds}. Sem ciclo de custo negativo, todo caminho mínimo é simples (não repete vértices).`
+                `A última iteração com aresta tensa foi a de número ${lastRoundWithChange || 1}, de um total de ${rounds}. Sem ciclo de peso negativo, todo caminho mínimo é simples (não repete vértices).`
             );
 
             if (endId && Number.isFinite(distance.get(endId) ?? Infinity)) {
@@ -216,7 +217,7 @@ export const bellmanFord: AlgorithmDefinition = {
             builder.commit({
                 title: 'Caminhos mínimos calculados',
                 description:
-                    'Nenhuma aresta está tensa, portanto o valor ótimo foi atingido e não há ciclo de custo negativo alcançável.',
+                    'Nenhuma aresta está tensa, portanto o valor ótimo foi atingido e não há ciclo de peso negativo alcançável.',
                 tables: [table()],
             });
         }

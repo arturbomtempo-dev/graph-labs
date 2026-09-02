@@ -1,4 +1,10 @@
-import { buildAdjacency, hasUndirectedEdges, nodeLabelMap, sortedNodes } from '../graph/helpers';
+import {
+    buildAdjacency,
+    hasUndirectedEdges,
+    nodeLabelMap,
+    orderedNodes,
+    sortedNodes,
+} from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, NodeId, TraceTable } from '../graph/types';
 import { requireEdges, requireNodes } from './shared';
@@ -27,9 +33,9 @@ export const kahn: AlgorithmDefinition = {
         }
         return errors;
     },
-    run: ({ graph }) => {
+    run: ({ graph, order }) => {
         const builder = createTraceBuilder(graph);
-        const adjacency = buildAdjacency(graph);
+        const adjacency = buildAdjacency(graph, order);
         const labels = nodeLabelMap(graph);
         const ordered = sortedNodes(graph);
 
@@ -96,7 +102,7 @@ export const kahn: AlgorithmDefinition = {
             ...snapshot(),
         });
 
-        ordered.forEach((node) => {
+        orderedNodes(graph, order).forEach((node) => {
             if ((inDegree.get(node.id) ?? 0) === 0) {
                 queue.push(node.id);
                 builder.setNode(node.id, 'frontier');

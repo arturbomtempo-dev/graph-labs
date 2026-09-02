@@ -28,7 +28,12 @@ interface BuilderPanelProps {
     onAddNode: () => void;
     onRenameNode: (id: NodeId, label: string) => void;
     onRemoveNode: (id: NodeId) => void;
-    onAddEdge: (source: NodeId, target: NodeId, weight: number, directed: boolean) => boolean;
+    onAddEdge: (
+        source: NodeId,
+        target: NodeId,
+        weight: number | undefined,
+        directed: boolean
+    ) => boolean;
     onUpdateEdge: (id: string, patch: Partial<Omit<GraphEdge, 'id'>>) => void;
     onRemoveEdge: (id: string) => void;
     onLoadPreset: (id: string) => void;
@@ -54,7 +59,7 @@ export function BuilderPanel({
     const nodes = sortedNodes(graph);
     const [source, setSource] = useState('');
     const [target, setTarget] = useState('');
-    const [weight, setWeight] = useState('1');
+    const [weight, setWeight] = useState('');
     const [directed, setDirected] = useState(false);
     const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -70,9 +75,10 @@ export function BuilderPanel({
             setFeedback('Laços não são suportados: escolha vértices diferentes.');
             return;
         }
-        const parsed = Number(weight.replace(',', '.'));
-        if (!Number.isFinite(parsed)) {
-            setFeedback('Informe um custo numérico válido.');
+        const trimmed = weight.trim();
+        const parsed = trimmed === '' ? undefined : Number(trimmed.replace(',', '.'));
+        if (parsed !== undefined && !Number.isFinite(parsed)) {
+            setFeedback('Informe um peso numérico válido ou deixe o campo vazio.');
             return;
         }
         const created = onAddEdge(source, target, parsed, directed);
@@ -197,8 +203,9 @@ export function BuilderPanel({
 
                     <div className="flex items-end gap-2">
                         <TextField
-                            label="Custo"
+                            label="Peso"
                             className="w-24 shrink-0"
+                            placeholder="opcional"
                             inputMode="decimal"
                             value={weight}
                             onChange={(event) => setWeight(event.target.value)}
@@ -247,8 +254,8 @@ export function BuilderPanel({
                     {stats.isMixed ? (
                         <div className="border-state-frontier/25 bg-state-frontier/10 flex flex-col gap-2 rounded-lg border p-2.5">
                             <p className="text-ink-soft text-[11px] leading-relaxed">
-                                O grafo mistura arestas dirigidas e não dirigidas. Alguns algoritmos
-                                exigem um único tipo.
+                                O grafo mistura arestas direcionadas e não direcionadas. Alguns
+                                algoritmos exigem um único tipo.
                             </p>
                             <div className="flex gap-1.5">
                                 <Button
@@ -257,7 +264,7 @@ export function BuilderPanel({
                                     className="flex-1"
                                     onClick={() => onSetAllDirected(true)}
                                 >
-                                    Todas dirigidas
+                                    Todas direcionadas
                                 </Button>
                                 <Button
                                     size="sm"
@@ -301,15 +308,22 @@ export function BuilderPanel({
                                     <span className="truncate">{labelOf(edge.target)}</span>
                                 </button>
                                 <input
-                                    value={String(edge.weight)}
+                                    value={edge.weight === undefined ? '' : String(edge.weight)}
                                     inputMode="decimal"
+                                    placeholder="sem peso"
+                                    title="Peso da aresta (deixe vazio para não usar peso)"
                                     onChange={(event) => {
-                                        const parsed = Number(event.target.value.replace(',', '.'));
+                                        const raw = event.target.value.trim();
+                                        if (raw === '') {
+                                            onUpdateEdge(edge.id, { weight: undefined });
+                                            return;
+                                        }
+                                        const parsed = Number(raw.replace(',', '.'));
                                         if (Number.isFinite(parsed)) {
                                             onUpdateEdge(edge.id, { weight: parsed });
                                         }
                                     }}
-                                    className="border-line bg-surface-sunken text-ink-soft focus:border-brand h-7 w-14 shrink-0 rounded-md border text-center font-mono text-[11px] outline-none"
+                                    className="border-line bg-surface-sunken text-ink-soft focus:border-brand placeholder:text-ink-faint h-7 w-16 shrink-0 rounded-md border text-center font-mono text-[11px] outline-none"
                                 />
                                 <button
                                     onClick={() =>
@@ -319,7 +333,7 @@ export function BuilderPanel({
                                     className="shrink-0"
                                 >
                                     <Badge tone={edge.directed ? 'brand' : 'neutral'}>
-                                        {edge.directed ? 'dirigida' : 'simples'}
+                                        {edge.directed ? 'direcionada' : 'simples'}
                                     </Badge>
                                 </button>
                                 <IconButton

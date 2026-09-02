@@ -39,7 +39,7 @@ export const documentation: AlgorithmDocumentation[] = [
         pitfalls: [
             'Marcar o vértice (atribuir L[w]) apenas quando ele sai da fila, e não quando entra: o mesmo vértice acabaria enfileirado várias vezes.',
             'Esquecer a condição L[w] > L[v] ao classificar arestas de irmão e de primo: ela garante que cada aresta seja explorada uma única vez.',
-            'Em grafo ponderado, a busca em largura só devolve caminho de custo mínimo se todos os custos forem iguais; ela minimiza o número de arestas, não o custo.',
+            'Em grafo ponderado, a busca em largura só devolve caminho de peso mínimo se todos os pesos forem iguais; ela minimiza o número de arestas, não o peso.',
         ],
     },
     {
@@ -128,35 +128,35 @@ export const documentation: AlgorithmDocumentation[] = [
     },
     {
         id: 'prim',
-        idea: 'Constrói a AGM incluindo vértices, um a um, de forma gulosa. Partindo de uma raiz r, a cada passo acrescenta a aresta de menor custo com uma extremidade em V(T) (já selecionados) e a outra fora de V(T).',
+        idea: 'Constrói a AGM incluindo vértices, um a um, de forma gulosa. Partindo de uma raiz r, a cada passo acrescenta a aresta de menor peso com uma extremidade em V(T) (já selecionados) e a outra fora de V(T).',
         pseudocode: [
             'Método de Prim',
             '  1. Escolher um vértice qualquer r ∈ V(G)   // raiz',
             '  2. V(T) ← { r }        // conj. de vértices selecionados',
             '  3. E(T) ← ∅            // conj. de arestas da AGM',
             '  4. enquanto V(T) ≠ V(G) efetuar',
-            '     a. Encontrar a aresta {v, w} de menor custo tal que',
+            '     a. Encontrar a aresta {v, w} de menor peso tal que',
             '        v ∈ V(T) e w ∉ V(T)',
             '     b. Acrescentar w a V(T)',
             '     c. Acrescentar {v, w} a E(T)',
             '',
-            '  Custo total: C(T) = Σ  c  , para e ∈ E(T)',
+            '  Peso total: C(T) = Σ  w  , para e ∈ E(T)',
             '                        e',
         ],
         invariant:
-            'A cada iteração, T = (V(T), E(T)) é uma árvore e está contida em alguma árvore geradora de custo mínimo de G.',
+            'A cada iteração, T = (V(T), E(T)) é uma árvore e está contida em alguma árvore geradora mínima de G.',
         pitfalls: [
-            'Comparar o custo da aresta com a distância acumulada desde a raiz em vez do custo da própria aresta, o que transformaria Prim em Dijkstra.',
-            'Aplicar Prim em grafo direcionado: o problema correto passa a ser o de arborescência de custo mínimo.',
+            'Comparar o peso da aresta com a distância acumulada desde a raiz em vez do peso da própria aresta, o que transformaria Prim em Dijkstra.',
+            'Aplicar Prim em grafo direcionado: o problema correto passa a ser o de arborescência de peso mínimo.',
             'Em grafo desconexo não existe árvore geradora: um grafo G possui árvore geradora se e somente se G for conexo.',
         ],
     },
     {
         id: 'kruskal',
-        idea: 'Constrói a AGM incluindo arestas, e não vértices como em Prim. Ordena as arestas em ordem não decrescente de custo e aceita, a cada iteração, a aresta de menor custo que não forme ciclo com as já inseridas em E(T).',
+        idea: 'Constrói a AGM incluindo arestas, e não vértices como em Prim. Ordena as arestas em ordem não decrescente de peso e aceita, a cada iteração, a aresta de menor peso que não forme ciclo com as já inseridas em E(T).',
         pseudocode: [
             'Método de Kruskal',
-            '  1. Ordenar as arestas em ordem não decrescente de custo:',
+            '  1. Ordenar as arestas em ordem não decrescente de peso:',
             '     e₁, e₂, e₃, . . .',
             '  2. V(T) ← V(G)      // todos os vértices entram na AGM',
             '  3. E(T) ← { e₁ }',
@@ -169,7 +169,7 @@ export const documentation: AlgorithmDocumentation[] = [
             '     b. j ← j + 1',
         ],
         invariant:
-            'A cada iteração, T = (V(T), E(T)) é uma floresta geradora contida em alguma árvore geradora de custo mínimo de G.',
+            'A cada iteração, T = (V(T), E(T)) é uma floresta geradora contida em alguma árvore geradora mínima de G.',
         pitfalls: [
             'Supor que bastam n − 1 iterações: são necessárias pelo menos n − 1, mas podem ser mais, pois arestas que formam ciclo precisam ser ignoradas.',
             'Aceitar uma aresta cujos extremos já estão ligados por arestas de E(T): ela fecharia um ciclo.',
@@ -203,11 +203,11 @@ export const documentation: AlgorithmDocumentation[] = [
             '            pred[w] ← v',
         ],
         invariant:
-            'Para todo v ∈ S, dist[v] já é o custo do caminho mínimo da raiz até v. Ao final, dist[ ] guarda os custos dos caminhos mínimos; os caminhos em si são recuperados pela lista de predecessores pred[ ].',
+            'Para todo v ∈ S, dist[v] já é o peso do caminho mínimo da raiz até v. Ao final, dist[ ] guarda os pesos dos caminhos mínimos; os caminhos em si são recuperados pela lista de predecessores pred[ ].',
         pitfalls: [
-            'Aplicar o método em grafo com aresta de custo negativo: ele falha. Reponderar, adicionando uma constante a todas as arestas, também pode falhar.',
+            'Aplicar o método em grafo com aresta de peso negativo: ele falha. Reponderar, adicionando uma constante a todas as arestas, também pode falhar.',
             'Reabrir um vértice que já pertence a S: uma vez fechado, seu dist não muda mais.',
-            'Achar que dist[ ] devolve os caminhos: sem pred[ ] obtêm-se apenas os custos.',
+            'Achar que dist[ ] devolve os caminhos: sem pred[ ] obtêm-se apenas os pesos.',
         ],
     },
     {
@@ -234,14 +234,14 @@ export const documentation: AlgorithmDocumentation[] = [
             '           pred[w] ← v',
             '',
             '  Se ainda houver aresta tensa após a última iteração,',
-            '  então existe um ciclo de custo negativo no grafo.',
+            '  então existe um ciclo de peso negativo no grafo.',
         ],
         invariant:
-            'Após a i-ésima iteração, dist[w] é no máximo o custo do menor caminho de s a w que usa até i arestas.',
+            'Após a i-ésima iteração, dist[w] é no máximo o peso do menor caminho de s a w que usa até i arestas.',
         pitfalls: [
             'Se, em alguma iteração, nenhuma aresta estiver tensa, o algoritmo pode terminar: as iterações seguintes não trariam atualizações.',
-            'Havendo ciclo de custo negativo entre s e t, não existe caminho mínimo entre eles; sem esse ciclo, o caminho mínimo é simples (não repete vértices).',
-            'Aresta não direcionada com custo negativo já é, por si só, um ciclo de custo negativo.',
+            'Havendo ciclo de peso negativo entre s e t, não existe caminho mínimo entre eles; sem esse ciclo, o caminho mínimo é simples (não repete vértices).',
+            'Aresta não direcionada com peso negativo já é, por si só, um ciclo de peso negativo.',
         ],
     },
     {
@@ -271,11 +271,11 @@ export const documentation: AlgorithmDocumentation[] = [
             '             pred[i, j] ← pred[k, j]',
         ],
         invariant:
-            'Ao final da rodada k, dist[i, j] é o custo do menor caminho de i a j que usa apenas { 1, . . ., k } como vértices intermediários; pred[i, j] guarda o penúltimo vértice desse caminho.',
+            'Ao final da rodada k, dist[i, j] é o peso do menor caminho de i a j que usa apenas { 1, . . ., k } como vértices intermediários; pred[i, j] guarda o penúltimo vértice desse caminho.',
         pitfalls: [
             'Trocar a ordem dos laços: k precisa ser o laço mais externo.',
             'Atualizar o predecessor com pred[i, k] em vez de pred[k, j]: pred[i, j] é o penúltimo vértice do caminho de i para j.',
-            'Entrada negativa na diagonal, isto é, dist[i, i] < 0, indica ciclo de custo negativo.',
+            'Entrada negativa na diagonal, isto é, dist[i, i] < 0, indica ciclo de peso negativo.',
         ],
     },
     {

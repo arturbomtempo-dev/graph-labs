@@ -18,11 +18,17 @@ export const fordFulkerson: AlgorithmDefinition = {
         'O caminho aumentante é escolhido de forma arbitrária',
     ],
     validate: (context) => flowNetworkErrors(context, 'o método de Ford-Fulkerson'),
-    run: ({ graph, startId, endId }) =>
-        runAugmentingMethod(graph, startId as NodeId, endId as NodeId, {
-            methodName: 'O método de Ford-Fulkerson',
-            findPath: augmentingPathByDepth,
-            explainChoice: (pathLabel, edgeCount) =>
-                `O método não impõe critério de escolha: basta existir um caminho aumentante P em G'(f). Uma busca em profundidade encontrou ${pathLabel}, com ${edgeCount} aresta(s).`,
-        }),
+    run: ({ graph, startId, endId, order }) =>
+        runAugmentingMethod(
+            graph,
+            startId as NodeId,
+            endId as NodeId,
+            {
+                methodName: 'O método de Ford-Fulkerson',
+                findPath: augmentingPathByDepth,
+                explainChoice: (pathLabel, edgeCount) =>
+                    `O método não impõe critério de escolha: basta existir um caminho aumentante P em G'(f). Uma busca em profundidade encontrou ${pathLabel}, com ${edgeCount} aresta(s).`,
+            },
+            order
+        ),
 };

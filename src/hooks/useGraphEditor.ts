@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { createEdgeId, createNodeId, edgeExists, nextNodeLabel } from '@/lib/graph/helpers';
+import {
+    createEdgeId,
+    createNodeId,
+    edgeExists,
+    hasWeight,
+    nextNodeLabel,
+} from '@/lib/graph/helpers';
 import { refineLayout } from '@/lib/graph/layout';
 import { presets } from '@/lib/graph/presets';
 import type { Graph, GraphEdge, NodeId } from '@/lib/graph/types';
@@ -148,7 +154,7 @@ export function useGraphEditor() {
     );
 
     const addEdge = useCallback(
-        (source: NodeId, target: NodeId, weight = 1, directed = false) => {
+        (source: NodeId, target: NodeId, weight?: number, directed = false) => {
             if (source === target) return false;
             let created = false;
             apply((current) => {
@@ -238,7 +244,7 @@ export function useGraphEditor() {
             directedCount,
             undirectedCount: graph.edges.length - directedCount,
             isMixed: directedCount > 0 && directedCount < graph.edges.length,
-            hasWeights: graph.edges.some((edge) => edge.weight !== 1),
+            hasWeights: graph.edges.some(hasWeight),
         };
     }, [graph]);
 

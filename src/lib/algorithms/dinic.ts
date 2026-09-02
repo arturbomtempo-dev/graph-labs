@@ -1,4 +1,4 @@
-import { formatWeight, nodeLabelMap } from '../graph/helpers';
+import { formatWeight, nodeLabelMap, weightOf } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, NodeId, TraceTable } from '../graph/types';
 import {
@@ -42,10 +42,10 @@ export const dinic: AlgorithmDefinition = {
         'No máximo n − 1 fluxos de bloqueio',
     ],
     validate: (context) => flowNetworkErrors(context, 'o método de Dinic'),
-    run: ({ graph, startId, endId }) => {
+    run: ({ graph, startId, endId, order }) => {
         const builder = createTraceBuilder(graph);
         const labels = nodeLabelMap(graph);
-        const network = createResidualNetwork(graph);
+        const network = createResidualNetwork(graph, order);
         const source = startId as NodeId;
         const sink = endId as NodeId;
 
@@ -57,7 +57,7 @@ export const dinic: AlgorithmDefinition = {
             graph.edges.forEach((edge) => {
                 builder.setEdgeBadge(
                     edge.id,
-                    `${formatWeight(network.edgeFlow(edge.id))}/${formatWeight(edge.weight)}`
+                    `${formatWeight(network.edgeFlow(edge.id))}/${formatWeight(weightOf(edge))}`
                 );
             });
         };
@@ -123,7 +123,7 @@ export const dinic: AlgorithmDefinition = {
                 const cutEdges = graph.edges.filter(
                     (edge) => inCut.has(edge.source) && !inCut.has(edge.target)
                 );
-                const cutCapacity = cutEdges.reduce((total, edge) => total + edge.weight, 0);
+                const cutCapacity = cutEdges.reduce((total, edge) => total + weightOf(edge), 0);
 
                 graph.edges.forEach((edge) => builder.setEdge(edge.id, 'idle'));
                 cutEdges.forEach((edge) => builder.setEdge(edge.id, 'reject'));

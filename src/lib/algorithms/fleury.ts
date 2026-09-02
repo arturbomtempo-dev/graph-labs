@@ -1,4 +1,10 @@
-import { compareLabels, hasDirectedEdges, nodeLabelMap, sortedNodes } from '../graph/helpers';
+import {
+    hasDirectedEdges,
+    nodeLabelMap,
+    orderComparator,
+    orderedNodes,
+    weightOf,
+} from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, GraphEdge, NodeId, TraceTable } from '../graph/types';
 import { requireEdges, requireNodes } from './shared';
@@ -50,7 +56,7 @@ export const fleury: AlgorithmDefinition = {
     constraints: [
         'Exige grafo não direcionado e conexo',
         'No máximo 2 vértices de grau ímpar',
-        'Ignora os custos das arestas',
+        'Ignora os pesos das arestas',
     ],
     validate: (context) => {
         const errors = [...requireNodes(context), ...requireEdges(context)];
@@ -94,10 +100,11 @@ export const fleury: AlgorithmDefinition = {
 
         return errors;
     },
-    run: ({ graph, startId }) => {
+    run: ({ graph, startId, order }) => {
         const builder = createTraceBuilder(graph);
         const labels = nodeLabelMap(graph);
-        const ordered = sortedNodes(graph);
+        const ordered = orderedNodes(graph, order);
+        const compare = orderComparator(graph, order);
 
         const odd = ordered.filter((node) => degreeOf(graph.edges, node.id) % 2 === 1);
         const withEdges = ordered.filter((node) => degreeOf(graph.edges, node.id) > 0);
@@ -188,11 +195,8 @@ export const fleury: AlgorithmDefinition = {
             const incident = available
                 .filter((edge) => edge.source === current || edge.target === current)
                 .sort((a, b) => {
-                    const byLabel = compareLabels(
-                        labels.get(otherEnd(a, current)) ?? '',
-                        labels.get(otherEnd(b, current)) ?? ''
-                    );
-                    return byLabel !== 0 ? byLabel : a.weight - b.weight;
+                    const byOrder = compare(otherEnd(a, current), otherEnd(b, current));
+                    return byOrder !== 0 ? byOrder : weightOf(a) - weightOf(b);
                 });
 
             if (incident.length === 0) break;

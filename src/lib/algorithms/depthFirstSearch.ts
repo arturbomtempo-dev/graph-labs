@@ -1,4 +1,4 @@
-import { buildAdjacency, nodeLabelMap, sortedNodes } from '../graph/helpers';
+import { buildAdjacency, nodeLabelMap, orderedNodes, sortedNodes } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, NodeId, TraceRow, TraceTable } from '../graph/types';
 import { labelOf, requireNodes, requireStart } from './shared';
@@ -25,9 +25,9 @@ export const depthFirstSearch: AlgorithmDefinition = {
         'Em grafo direcionado: árvore, retorno, avanço e cruzamento',
     ],
     validate: (context) => [...requireNodes(context), ...requireStart(context)],
-    run: ({ graph, startId }) => {
+    run: ({ graph, startId, order }) => {
         const builder = createTraceBuilder(graph);
-        const adjacency = buildAdjacency(graph);
+        const adjacency = buildAdjacency(graph, order);
         const labels = nodeLabelMap(graph);
 
         const color = new Map<NodeId, Color>();
@@ -204,7 +204,9 @@ export const depthFirstSearch: AlgorithmDefinition = {
 
         visit(startId as NodeId, null);
 
-        const remaining = sortedNodes(graph).filter((node) => color.get(node.id) === 'white');
+        const remaining = orderedNodes(graph, order).filter(
+            (node) => color.get(node.id) === 'white'
+        );
         remaining.forEach((node) => {
             builder.commit({
                 title: `Nova raiz: ${node.label}`,

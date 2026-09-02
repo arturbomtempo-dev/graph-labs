@@ -7,6 +7,7 @@ import { algorithms } from '@/lib/algorithms';
 import { sortedNodes } from '@/lib/graph/helpers';
 import type { AlgorithmCategory, AlgorithmDefinition, Graph, NodeId } from '@/lib/graph/types';
 import { cn } from '@/lib/utils/cn';
+import { VisitOrderPicker } from '../VisitOrderPicker';
 
 interface AlgorithmPanelProps {
     graph: Graph;
@@ -17,6 +18,8 @@ interface AlgorithmPanelProps {
     onStartChange: (id: NodeId | null) => void;
     onEndChange: (id: NodeId | null) => void;
     issues: string[];
+    order: NodeId[];
+    onOrderChange: (order: NodeId[]) => void;
     onRun: () => void;
 }
 
@@ -41,6 +44,8 @@ export function AlgorithmPanel({
     onStartChange,
     onEndChange,
     issues,
+    order,
+    onOrderChange,
     onRun,
 }: AlgorithmPanelProps) {
     const nodeOptions = sortedNodes(graph).map((node) => ({ value: node.id, label: node.label }));
@@ -150,6 +155,21 @@ export function AlgorithmPanel({
                             onChange={(event) => onEndChange(event.target.value || null)}
                         />
                     ) : null}
+
+                    <div className="border-line border-t pt-3">
+                        <VisitOrderPicker
+                            graph={graph}
+                            order={order}
+                            onChange={onOrderChange}
+                            rootLabel={
+                                isFlow
+                                    ? 'o primeiro vizinho tentado na busca'
+                                    : showStart
+                                      ? 'a raiz quando nenhuma for escolhida acima'
+                                      : 'a raiz da execução'
+                            }
+                        />
+                    </div>
 
                     {issues.length > 0 ? (
                         <div className="border-state-reject/25 bg-state-reject/8 flex flex-col gap-1.5 rounded-lg border p-2.5">

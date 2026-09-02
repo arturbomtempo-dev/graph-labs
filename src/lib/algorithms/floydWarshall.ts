@@ -1,4 +1,4 @@
-import { formatDistance, formatWeight, sortedNodes } from '../graph/helpers';
+import { formatDistance, formatWeight, orderedNodes, weightOf } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, GraphNode, NodeId, TraceTable } from '../graph/types';
 import { edgesAlongPath, labelOf, requireEdges, requireNodes } from './shared';
@@ -14,14 +14,14 @@ export const floydWarshall: AlgorithmDefinition = {
     needsStart: false,
     needsEnd: false,
     constraints: [
-        'Admite arestas de custo negativo',
-        'Não admite ciclo de custo negativo',
+        'Admite arestas de peso negativo',
+        'Não admite ciclo de peso negativo',
         'Calcula todos os pares de vértices de uma só vez',
     ],
     validate: (context) => [...requireNodes(context), ...requireEdges(context)],
-    run: ({ graph, startId, endId }) => {
+    run: ({ graph, startId, endId, order }) => {
         const builder = createTraceBuilder(graph);
-        const nodes: GraphNode[] = sortedNodes(graph);
+        const nodes: GraphNode[] = orderedNodes(graph, order);
         const index = new Map<NodeId, number>(nodes.map((node, position) => [node.id, position]));
         const size = nodes.length;
 
@@ -35,12 +35,13 @@ export const floydWarshall: AlgorithmDefinition = {
         graph.edges.forEach((edge) => {
             const i = index.get(edge.source) as number;
             const j = index.get(edge.target) as number;
-            if (edge.weight < distance[i][j]) {
-                distance[i][j] = edge.weight;
+            const weight = weightOf(edge);
+            if (weight < distance[i][j]) {
+                distance[i][j] = weight;
                 pred[i][j] = edge.source;
             }
-            if (!edge.directed && edge.weight < distance[j][i]) {
-                distance[j][i] = edge.weight;
+            if (!edge.directed && weight < distance[j][i]) {
+                distance[j][i] = weight;
                 pred[j][i] = edge.target;
             }
         });
@@ -167,7 +168,7 @@ export const floydWarshall: AlgorithmDefinition = {
                 builder.setNodeBadge(node.id, 'ciclo −');
             });
             conclusions.push(
-                `Ciclo de custo negativo detectado: dist[i, i] < 0 para ${negativeCycleNodes
+                `Ciclo de peso negativo detectado: dist[i, i] < 0 para ${negativeCycleNodes
                     .map((node) => node.label)
                     .join(
                         ', '
@@ -175,7 +176,7 @@ export const floydWarshall: AlgorithmDefinition = {
             );
         } else {
             conclusions.push(
-                'Nenhuma entrada da diagonal ficou negativa, portanto o grafo não possui ciclo de custo negativo.'
+                'Nenhuma entrada da diagonal ficou negativa, portanto o grafo não possui ciclo de peso negativo.'
             );
         }
 
@@ -200,7 +201,7 @@ export const floydWarshall: AlgorithmDefinition = {
                 conclusions.push(
                     `Caminho mínimo de ${labelOf(graph, startId)} até ${labelOf(graph, endId)}, recuperado de trás para frente pela matriz pred: ${path
                         .map((id) => labelOf(graph, id))
-                        .join(' → ')} (custo ${formatDistance(distance[i][j])}).`
+                        .join(' → ')} (peso ${formatDistance(distance[i][j])}).`
                 );
             }
         }

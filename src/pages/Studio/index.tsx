@@ -42,6 +42,7 @@ export function Studio() {
     const [startId, setStartId] = useState<NodeId | null>(null);
     const [endId, setEndId] = useState<NodeId | null>(null);
     const [autoFitKey, setAutoFitKey] = useState(0);
+    const [visitOrder, setVisitOrder] = useState<NodeId[]>([]);
 
     const { graph } = editor;
     const algorithm = findAlgorithm(algorithmId) ?? algorithms[0];
@@ -93,9 +94,14 @@ export function Studio() {
             ? selectedEdgeId
             : null;
 
+    const resolvedOrder = useMemo(
+        () => visitOrder.filter((id) => nodeIds.has(id)),
+        [visitOrder, nodeIds]
+    );
+
     const context = useMemo(
-        () => ({ graph, startId: activeStartId, endId: activeEndId }),
-        [graph, activeStartId, activeEndId]
+        () => ({ graph, startId: activeStartId, endId: activeEndId, order: resolvedOrder }),
+        [graph, activeStartId, activeEndId, resolvedOrder]
     );
     const issues = useMemo(() => algorithm.validate(context), [algorithm, context]);
 
@@ -143,7 +149,7 @@ export function Studio() {
                     setPendingSourceId(id);
                     return;
                 }
-                editor.addEdge(pendingSourceId, id, 1, defaultDirected);
+                editor.addEdge(pendingSourceId, id, undefined, defaultDirected);
                 setPendingSourceId(null);
                 return;
             }
@@ -198,7 +204,7 @@ export function Studio() {
     }, [editor, resolvedSelectedNodeId, resolvedSelectedEdgeId]);
 
     return (
-        <div className="flex flex-1 flex-col lg:h-[calc(100dvh-3.5rem)] lg:flex-row lg:overflow-hidden">
+        <div className="flex flex-1 flex-col lg:h-[calc(100dvh-3.5rem-1px)] lg:flex-none lg:flex-row lg:overflow-hidden">
             <section className="border-line relative h-[52dvh] shrink-0 border-b lg:h-auto lg:flex-1 lg:border-r lg:border-b-0">
                 <GraphCanvas
                     graph={graph}
@@ -241,12 +247,12 @@ export function Studio() {
                 <CanvasLegend className="absolute bottom-3 left-3 max-w-[calc(100%-4.5rem)]" />
             </section>
 
-            <aside className="bg-surface-sunken/40 flex w-full flex-col lg:w-[400px] lg:shrink-0 lg:overflow-hidden">
+            <aside className="bg-surface-sunken/40 flex w-full flex-col lg:min-h-0 lg:w-[400px] lg:shrink-0 lg:overflow-hidden">
                 <div className="border-line bg-surface/85 sticky top-14 z-20 border-b p-3 backdrop-blur-md lg:static">
                     <SegmentedControl options={tabs} value={tab} onChange={setTab} size="sm" />
                 </div>
 
-                <div className="flex-1 p-3 lg:overflow-y-auto">
+                <div className="flex-1 overscroll-contain p-3 lg:min-h-0 lg:overflow-y-auto">
                     {tab === 'build' ? (
                         <BuilderPanel
                             graph={graph}
@@ -276,6 +282,8 @@ export function Studio() {
                             onStartChange={setStartId}
                             onEndChange={setEndId}
                             issues={issues}
+                            order={resolvedOrder}
+                            onOrderChange={setVisitOrder}
                             onRun={handleRun}
                         />
                     ) : null}

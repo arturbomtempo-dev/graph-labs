@@ -7,7 +7,7 @@ const capabilities = [
         icon: MousePointerClick,
         title: 'Edição direta no canvas',
         description:
-            'Crie vértices com um clique, conecte-os arrastando o olhar de um ao outro e ajuste custos e direção sem sair da tela.',
+            'Crie vértices com um clique, conecte-os arrastando o olhar de um ao outro e ajuste pesos e direção sem sair da tela.',
     },
     {
         icon: Route,

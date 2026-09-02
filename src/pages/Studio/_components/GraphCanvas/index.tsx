@@ -8,6 +8,7 @@ import {
     type PointerEvent as ReactPointerEvent,
 } from 'react';
 import { IconButton } from '@/components/IconButton';
+import { hasWeight } from '@/lib/graph/helpers';
 import type { AlgorithmStep, ElementState, Graph, NodeId } from '@/lib/graph/types';
 import { cn } from '@/lib/utils/cn';
 import {
@@ -392,8 +393,8 @@ export function GraphCanvas({
                         );
                         const isSelected = selectedEdgeId === edge.id;
                         const badge = step?.edgeBadges?.[edge.id];
-                        const label = badge ?? String(edge.weight);
-                        const labelWidth = label.length * 7.5 + 14;
+                        const label = badge ?? (hasWeight(edge) ? String(edge.weight) : null);
+                        const labelWidth = (label?.length ?? 0) * 7.5 + 14;
 
                         return (
                             <g key={edge.id} data-graph-element="edge">
@@ -429,25 +430,27 @@ export function GraphCanvas({
                                         strokeLinecap="round"
                                     />
                                 ) : null}
-                                <g className="pointer-events-none">
-                                    <rect
-                                        x={geometry.midpoint.x - labelWidth / 2}
-                                        y={geometry.midpoint.y - 10}
-                                        width={labelWidth}
-                                        height={20}
-                                        rx={6}
-                                        className="fill-surface stroke-line"
-                                        strokeWidth={1}
-                                    />
-                                    <text
-                                        x={geometry.midpoint.x}
-                                        y={geometry.midpoint.y + 4}
-                                        textAnchor="middle"
-                                        className="fill-ink-soft font-mono text-[11px] font-medium"
-                                    >
-                                        {label}
-                                    </text>
-                                </g>
+                                {label !== null ? (
+                                    <g className="pointer-events-none">
+                                        <rect
+                                            x={geometry.midpoint.x - labelWidth / 2}
+                                            y={geometry.midpoint.y - 10}
+                                            width={labelWidth}
+                                            height={20}
+                                            rx={6}
+                                            className="fill-surface stroke-line"
+                                            strokeWidth={1}
+                                        />
+                                        <text
+                                            x={geometry.midpoint.x}
+                                            y={geometry.midpoint.y + 4}
+                                            textAnchor="middle"
+                                            className="fill-ink-soft font-mono text-[11px] font-medium"
+                                        >
+                                            {label}
+                                        </text>
+                                    </g>
+                                ) : null}
                             </g>
                         );
                     })}

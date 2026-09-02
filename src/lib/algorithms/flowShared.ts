@@ -3,7 +3,8 @@ import {
     formatWeight,
     hasUndirectedEdges,
     nodeLabelMap,
-    sortedNodes,
+    orderedNodes,
+    weightOf,
 } from '../graph/helpers';
 import type { AlgorithmContext, Graph, NodeId, TraceTable } from '../graph/types';
 import { requireEdges, requireNodes } from './shared';
@@ -20,16 +21,17 @@ export interface ResidualNetwork {
     push: (from: NodeId, to: NodeId, amount: number) => void;
 }
 
-export function createResidualNetwork(graph: Graph): ResidualNetwork {
+export function createResidualNetwork(graph: Graph, visitOrder?: NodeId[]): ResidualNetwork {
     const capacity = new Map<string, number>();
     const residual = new Map<string, number>();
-    const order = sortedNodes(graph).map((node) => node.id);
+    const order = orderedNodes(graph, visitOrder).map((node) => node.id);
 
     graph.edges.forEach((edge) => {
         const forward = arcKey(edge.source, edge.target);
         const backward = arcKey(edge.target, edge.source);
-        capacity.set(forward, (capacity.get(forward) ?? 0) + edge.weight);
-        residual.set(forward, (residual.get(forward) ?? 0) + edge.weight);
+        const capacityValue = weightOf(edge);
+        capacity.set(forward, (capacity.get(forward) ?? 0) + capacityValue);
+        residual.set(forward, (residual.get(forward) ?? 0) + capacityValue);
         if (!capacity.has(backward)) capacity.set(backward, 0);
         if (!residual.has(backward)) residual.set(backward, 0);
     });
@@ -67,7 +69,7 @@ export function flowNetworkErrors(context: AlgorithmContext, method: string): st
             `Uma rede de fluxo é um grafo direcionado: converta todas as arestas para direcionadas antes de aplicar ${method}.`
         );
     }
-    if (context.graph.edges.some((edge) => edge.weight < 0)) {
+    if (context.graph.edges.some((edge) => weightOf(edge) < 0)) {
         errors.push('Em uma rede de fluxo, toda aresta tem capacidade u(e) > 0.');
     }
     return errors;
@@ -94,7 +96,7 @@ export function residualTable(graph: Graph, network: ResidualNetwork): TraceTabl
                     cells: {
                         arc: `(${labels.get(edge.source)}, ${labels.get(edge.target)})`,
                         flow: formatWeight(flow),
-                        capacityValue: formatWeight(edge.weight),
+                        capacityValue: formatWeight(weightOf(edge)),
                         residualValue: formatWeight(network.residualOf(edge.source, edge.target)),
                     },
                 };
@@ -126,7 +128,7 @@ export function augmentingPathByDepth(
         if (visited.has(current)) continue;
         visited.add(current);
         if (current === sink) return rebuild(parent, sink);
-        
+
         [...network.neighboursOf(current)].reverse().forEach((neighbour) => {
             if (visited.has(neighbour)) return;
             parent.set(neighbour, current);

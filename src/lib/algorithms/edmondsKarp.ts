@@ -18,11 +18,17 @@ export const edmondsKarp: AlgorithmDefinition = {
         'Escolhe sempre o caminho aumentante com menos arestas',
     ],
     validate: (context) => flowNetworkErrors(context, 'o método de Edmonds-Karp'),
-    run: ({ graph, startId, endId }) =>
-        runAugmentingMethod(graph, startId as NodeId, endId as NodeId, {
-            methodName: 'O método de Edmonds-Karp',
-            findPath: augmentingPathByBreadth,
-            explainChoice: (pathLabel, edgeCount) =>
-                `Uma busca em largura em G'(f) devolve o caminho aumentante com o menor número de arestas: ${pathLabel}, com ${edgeCount} aresta(s). É essa escolha que torna o método polinomial.`,
-        }),
+    run: ({ graph, startId, endId, order }) =>
+        runAugmentingMethod(
+            graph,
+            startId as NodeId,
+            endId as NodeId,
+            {
+                methodName: 'O método de Edmonds-Karp',
+                findPath: augmentingPathByBreadth,
+                explainChoice: (pathLabel, edgeCount) =>
+                    `Uma busca em largura em G'(f) devolve o caminho aumentante com o menor número de arestas: ${pathLabel}, com ${edgeCount} aresta(s). É essa escolha que torna o método polinomial.`,
+            },
+            order
+        ),
 };

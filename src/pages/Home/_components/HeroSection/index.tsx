@@ -21,9 +21,9 @@ export function HeroSection() {
 
                 <p className="text-ink-soft mt-4 max-w-2xl text-sm leading-relaxed text-pretty sm:text-base">
                     Um laboratório visual para aulas e monitorias. Desenhe vértices e arestas
-                    direcionadas ou não direcionadas, defina custos e execute os métodos clássicos
-                    da disciplina na mesma notação usada em sala, com tabelas, filas e a
-                    justificativa de cada iteração.
+                    direcionadas ou não direcionadas, defina pesos e execute os métodos clássicos da
+                    disciplina na mesma notação usada em sala, com tabelas, filas e a justificativa
+                    de cada iteração.
                 </p>
 
                 <div className="mt-8 flex flex-wrap gap-2.5">

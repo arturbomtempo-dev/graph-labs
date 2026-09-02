@@ -1,4 +1,4 @@
-import { buildAdjacency, compareLabels, hasDirectedEdges, sortedNodes } from '../graph/helpers';
+import { buildAdjacency, hasDirectedEdges, orderComparator, orderedNodes } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, NodeId } from '../graph/types';
 import { colorTable, undirectedDegrees } from './greedyColoring';
@@ -28,15 +28,16 @@ export const welshPowell: AlgorithmDefinition = {
         }
         return errors;
     },
-    run: ({ graph }) => {
+    run: ({ graph, order }) => {
         const builder = createTraceBuilder(graph);
-        const adjacency = buildAdjacency(graph);
-        const alphabetical = sortedNodes(graph);
+        const adjacency = buildAdjacency(graph, order);
+        const alphabetical = orderedNodes(graph, order);
         const degree = undirectedDegrees(adjacency, alphabetical);
 
-        const order = [...alphabetical].sort((a, b) => {
+        const compare = orderComparator(graph, order);
+        const sequence = [...alphabetical].sort((a, b) => {
             const byDegree = (degree.get(b.id) ?? 0) - (degree.get(a.id) ?? 0);
-            return byDegree !== 0 ? byDegree : compareLabels(a.label, b.label);
+            return byDegree !== 0 ? byDegree : compare(a.id, b.id);
         });
 
         const color = new Map<NodeId, number>();
@@ -44,19 +45,19 @@ export const welshPowell: AlgorithmDefinition = {
             new Set((adjacency.get(node) ?? []).map((entry) => entry.to));
 
         const snapshot = (highlight?: NodeId, usedColors = 0) => ({
-            tables: [colorTable('wp-colors', order, color, degree, highlight)],
+            tables: [colorTable('wp-colors', sequence, color, degree, highlight)],
             metrics: [
                 { label: 'Cores utilizadas', value: String(usedColors) },
                 {
                     label: 'Δ(G)',
-                    value: String(Math.max(0, ...order.map((n) => degree.get(n.id) ?? 0))),
+                    value: String(Math.max(0, ...sequence.map((n) => degree.get(n.id) ?? 0))),
                 },
             ],
         });
 
         builder.commit({
             title: 'Passo 1: ordenação por grau',
-            description: `Os vértices são ordenados em ordem não crescente de graus: ${order
+            description: `Os vértices são ordenados em ordem não crescente de graus: ${sequence
                 .map((node) => `${node.label} (d = ${degree.get(node.id)})`)
                 .join(', ')}.`,
             ...snapshot(),
@@ -64,7 +65,7 @@ export const welshPowell: AlgorithmDefinition = {
 
         let current = 0;
 
-        while (color.size < order.length) {
+        while (color.size < sequence.length) {
             const painted: string[] = [];
             const blocked = new Set<NodeId>();
 
@@ -74,7 +75,7 @@ export const welshPowell: AlgorithmDefinition = {
                 ...snapshot(undefined, current),
             });
 
-            for (const node of order) {
+            for (const node of sequence) {
                 if (color.has(node.id)) continue;
 
                 if (blocked.has(node.id)) {
@@ -106,7 +107,7 @@ export const welshPowell: AlgorithmDefinition = {
             builder.commit({
                 title: `Cor ${current + 1} encerrada`,
                 description: `A cor ${current + 1} foi atribuída a ${painted.length} vértice(s): ${painted.join(', ') || '-'}. ${
-                    color.size < order.length
+                    color.size < sequence.length
                         ? 'Ainda restam vértices sem cor, então uma nova cor é iniciada.'
                         : 'Todos os vértices estão coloridos.'
                 }`,
@@ -116,7 +117,7 @@ export const welshPowell: AlgorithmDefinition = {
             current += 1;
         }
 
-        const maxDegree = Math.max(0, ...order.map((node) => degree.get(node.id) ?? 0));
+        const maxDegree = Math.max(0, ...sequence.map((node) => degree.get(node.id) ?? 0));
 
         builder.commit({
             title: 'Coloração concluída',

@@ -1,4 +1,10 @@
-import { buildAdjacency, hasUndirectedEdges, nodeLabelMap, sortedNodes } from '../graph/helpers';
+import {
+    buildAdjacency,
+    hasUndirectedEdges,
+    nodeLabelMap,
+    orderedNodes,
+    sortedNodes,
+} from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, NodeId, TraceTable } from '../graph/types';
 import { requireEdges, requireNodes } from './shared';
@@ -35,9 +41,9 @@ export const topologicalDfs: AlgorithmDefinition = {
         }
         return errors;
     },
-    run: ({ graph }) => {
+    run: ({ graph, order }) => {
         const builder = createTraceBuilder(graph);
-        const adjacency = buildAdjacency(graph);
+        const adjacency = buildAdjacency(graph, order);
         const labels = nodeLabelMap(graph);
         const ordered = sortedNodes(graph);
 
@@ -145,7 +151,7 @@ export const topologicalDfs: AlgorithmDefinition = {
             result.forEach((id, position) => builder.setNodeBadge(id, String(position + 1)));
         };
 
-        for (const node of ordered) {
+        for (const node of orderedNodes(graph, order)) {
             if (cycleAt) break;
             if (mark.get(node.id) !== 0) continue;
             visit(node.id);

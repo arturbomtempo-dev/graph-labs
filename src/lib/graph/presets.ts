@@ -17,7 +17,7 @@ interface NodeSeed {
 interface EdgeSeed {
     source: string;
     target: string;
-    weight: number;
+    weight?: number;
     directed: boolean;
 }
 
@@ -39,7 +39,7 @@ export const presets: GraphPreset[] = [
         id: 'weighted-undirected',
         name: 'Rede ponderada',
         description:
-            'Grafo não direcionado e ponderado, com custo c_e > 0 em cada aresta: base para AGM (Prim e Kruskal) e para Dijkstra.',
+            'Grafo não direcionado e ponderado, com peso w(e) > 0 em cada aresta: base para AGM (Prim e Kruskal) e para Dijkstra.',
         suggestedAlgorithms: ['prim', 'kruskal', 'dijkstra'],
         build: () =>
             assemble(
@@ -82,15 +82,15 @@ export const presets: GraphPreset[] = [
                     { label: 'G', x: 430, y: 350 },
                 ],
                 [
-                    { source: 'A', target: 'B', weight: 1, directed: true },
-                    { source: 'B', target: 'C', weight: 1, directed: true },
-                    { source: 'C', target: 'A', weight: 1, directed: true },
-                    { source: 'B', target: 'D', weight: 1, directed: true },
-                    { source: 'D', target: 'E', weight: 1, directed: true },
-                    { source: 'E', target: 'F', weight: 1, directed: true },
-                    { source: 'F', target: 'D', weight: 1, directed: true },
-                    { source: 'F', target: 'G', weight: 1, directed: true },
-                    { source: 'G', target: 'G', weight: 1, directed: true },
+                    { source: 'A', target: 'B', directed: true },
+                    { source: 'B', target: 'C', directed: true },
+                    { source: 'C', target: 'A', directed: true },
+                    { source: 'B', target: 'D', directed: true },
+                    { source: 'D', target: 'E', directed: true },
+                    { source: 'E', target: 'F', directed: true },
+                    { source: 'F', target: 'D', directed: true },
+                    { source: 'F', target: 'G', directed: true },
+                    { source: 'G', target: 'G', directed: true },
                 ].filter((edge) => edge.source !== edge.target)
             ),
     },
@@ -124,9 +124,9 @@ export const presets: GraphPreset[] = [
     },
     {
         id: 'negative-weights',
-        name: 'Custos negativos',
+        name: 'Pesos negativos',
         description:
-            'Grafo direcionado com arestas de custo negativo e sem ciclo de custo negativo, para Bellman-Ford e Floyd-Warshall.',
+            'Grafo direcionado com arestas de peso negativo e sem ciclo de peso negativo, para Bellman-Ford e Floyd-Warshall.',
         suggestedAlgorithms: ['bellman-ford', 'floyd-warshall'],
         build: () =>
             assemble(
@@ -152,7 +152,7 @@ export const presets: GraphPreset[] = [
         id: 'unweighted',
         name: 'Grafo simples',
         description:
-            'Grafo simples não direcionado, sem custos relevantes: bom para as buscas em largura e em profundidade.',
+            'Grafo simples não direcionado, sem pesos relevantes: bom para as buscas em largura e em profundidade.',
         suggestedAlgorithms: ['bfs', 'dfs'],
         build: () =>
             assemble(
@@ -166,13 +166,13 @@ export const presets: GraphPreset[] = [
                     { label: 'G', x: 590, y: 330 },
                 ],
                 [
-                    { source: 'A', target: 'B', weight: 1, directed: false },
-                    { source: 'A', target: 'C', weight: 1, directed: false },
-                    { source: 'B', target: 'D', weight: 1, directed: false },
-                    { source: 'B', target: 'E', weight: 1, directed: false },
-                    { source: 'C', target: 'F', weight: 1, directed: false },
-                    { source: 'C', target: 'G', weight: 1, directed: false },
-                    { source: 'E', target: 'F', weight: 1, directed: false },
+                    { source: 'A', target: 'B', directed: false },
+                    { source: 'A', target: 'C', directed: false },
+                    { source: 'B', target: 'D', directed: false },
+                    { source: 'B', target: 'E', directed: false },
+                    { source: 'C', target: 'F', directed: false },
+                    { source: 'C', target: 'G', directed: false },
+                    { source: 'E', target: 'F', directed: false },
                 ]
             ),
     },
@@ -194,18 +194,18 @@ export const presets: GraphPreset[] = [
                     { label: '7', x: 500, y: 380 },
                 ],
                 [
-                    { source: '1', target: '2', weight: 1, directed: false },
-                    { source: '2', target: '3', weight: 1, directed: false },
-                    { source: '3', target: '4', weight: 1, directed: false },
-                    { source: '4', target: '2', weight: 1, directed: false },
-                    { source: '2', target: '5', weight: 1, directed: false },
-                    { source: '5', target: '6', weight: 1, directed: false },
-                    { source: '6', target: '4', weight: 1, directed: false },
-                    { source: '4', target: '5', weight: 1, directed: false },
-                    { source: '5', target: '7', weight: 1, directed: false },
-                    { source: '7', target: '6', weight: 1, directed: false },
-                    { source: '6', target: '3', weight: 1, directed: false },
-                    { source: '3', target: '1', weight: 1, directed: false },
+                    { source: '1', target: '2', directed: false },
+                    { source: '2', target: '3', directed: false },
+                    { source: '3', target: '4', directed: false },
+                    { source: '4', target: '2', directed: false },
+                    { source: '2', target: '5', directed: false },
+                    { source: '5', target: '6', directed: false },
+                    { source: '6', target: '4', directed: false },
+                    { source: '4', target: '5', directed: false },
+                    { source: '5', target: '7', directed: false },
+                    { source: '7', target: '6', directed: false },
+                    { source: '6', target: '3', directed: false },
+                    { source: '3', target: '1', directed: false },
                 ]
             ),
     },
@@ -226,16 +226,16 @@ export const presets: GraphPreset[] = [
                     { label: '6', x: 300, y: 450 },
                 ],
                 [
-                    { source: '5', target: '6', weight: 1, directed: false },
-                    { source: '6', target: '4', weight: 1, directed: false },
-                    { source: '4', target: '2', weight: 1, directed: false },
-                    { source: '2', target: '5', weight: 1, directed: false },
-                    { source: '5', target: '4', weight: 1, directed: false },
-                    { source: '4', target: '3', weight: 1, directed: false },
-                    { source: '3', target: '2', weight: 1, directed: false },
-                    { source: '2', target: '1', weight: 1, directed: false },
-                    { source: '1', target: '3', weight: 1, directed: false },
-                    { source: '3', target: '6', weight: 1, directed: false },
+                    { source: '5', target: '6', directed: false },
+                    { source: '6', target: '4', directed: false },
+                    { source: '4', target: '2', directed: false },
+                    { source: '2', target: '5', directed: false },
+                    { source: '5', target: '4', directed: false },
+                    { source: '4', target: '3', directed: false },
+                    { source: '3', target: '2', directed: false },
+                    { source: '2', target: '1', directed: false },
+                    { source: '1', target: '3', directed: false },
+                    { source: '3', target: '6', directed: false },
                 ]
             ),
     },
@@ -279,11 +279,11 @@ export const presets: GraphPreset[] = [
                     { label: 'F', x: 630, y: 320 },
                 ],
                 [
-                    { source: 'A', target: 'C', weight: 1, directed: true },
-                    { source: 'C', target: 'D', weight: 1, directed: true },
-                    { source: 'D', target: 'E', weight: 1, directed: true },
-                    { source: 'B', target: 'E', weight: 1, directed: true },
-                    { source: 'E', target: 'F', weight: 1, directed: true },
+                    { source: 'A', target: 'C', directed: true },
+                    { source: 'C', target: 'D', directed: true },
+                    { source: 'D', target: 'E', directed: true },
+                    { source: 'B', target: 'E', directed: true },
+                    { source: 'E', target: 'F', directed: true },
                 ]
             ),
     },
@@ -306,15 +306,15 @@ export const presets: GraphPreset[] = [
                     { label: 'H', x: 860, y: 250 },
                 ],
                 [
-                    { source: 'A', target: 'B', weight: 1, directed: false },
-                    { source: 'B', target: 'C', weight: 1, directed: false },
-                    { source: 'C', target: 'A', weight: 1, directed: false },
-                    { source: 'C', target: 'D', weight: 1, directed: false },
-                    { source: 'D', target: 'E', weight: 1, directed: false },
-                    { source: 'E', target: 'F', weight: 1, directed: false },
-                    { source: 'F', target: 'D', weight: 1, directed: false },
-                    { source: 'F', target: 'G', weight: 1, directed: false },
-                    { source: 'G', target: 'H', weight: 1, directed: false },
+                    { source: 'A', target: 'B', directed: false },
+                    { source: 'B', target: 'C', directed: false },
+                    { source: 'C', target: 'A', directed: false },
+                    { source: 'C', target: 'D', directed: false },
+                    { source: 'D', target: 'E', directed: false },
+                    { source: 'E', target: 'F', directed: false },
+                    { source: 'F', target: 'D', directed: false },
+                    { source: 'F', target: 'G', directed: false },
+                    { source: 'G', target: 'H', directed: false },
                 ]
             ),
     },
@@ -334,12 +334,12 @@ export const presets: GraphPreset[] = [
                     { label: 'E', x: 120, y: 300 },
                 ],
                 [
-                    { source: 'A', target: 'D', weight: 1, directed: false },
-                    { source: 'B', target: 'C', weight: 1, directed: false },
-                    { source: 'B', target: 'E', weight: 1, directed: false },
-                    { source: 'C', target: 'D', weight: 1, directed: false },
-                    { source: 'C', target: 'E', weight: 1, directed: false },
-                    { source: 'D', target: 'E', weight: 1, directed: false },
+                    { source: 'A', target: 'D', directed: false },
+                    { source: 'B', target: 'C', directed: false },
+                    { source: 'B', target: 'E', directed: false },
+                    { source: 'C', target: 'D', directed: false },
+                    { source: 'C', target: 'E', directed: false },
+                    { source: 'D', target: 'E', directed: false },
                 ]
             ),
     },
@@ -360,12 +360,12 @@ export const presets: GraphPreset[] = [
                     { label: 'F', x: 156, y: 155 },
                 ],
                 [
-                    { source: 'A', target: 'D', weight: 1, directed: false },
-                    { source: 'A', target: 'F', weight: 1, directed: false },
-                    { source: 'C', target: 'B', weight: 1, directed: false },
-                    { source: 'C', target: 'F', weight: 1, directed: false },
-                    { source: 'E', target: 'B', weight: 1, directed: false },
-                    { source: 'E', target: 'D', weight: 1, directed: false },
+                    { source: 'A', target: 'D', directed: false },
+                    { source: 'A', target: 'F', directed: false },
+                    { source: 'C', target: 'B', directed: false },
+                    { source: 'C', target: 'F', directed: false },
+                    { source: 'E', target: 'B', directed: false },
+                    { source: 'E', target: 'D', directed: false },
                 ]
             ),
     },

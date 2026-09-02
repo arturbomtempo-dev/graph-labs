@@ -20,8 +20,24 @@ export function nodeLabelMap(graph: Graph): Map<NodeId, string> {
     return new Map(graph.nodes.map((node) => [node.id, node.label]));
 }
 
-export function buildAdjacency(graph: Graph): Map<NodeId, AdjacencyEntry[]> {
+export function orderComparator(graph: Graph, order?: NodeId[]): (a: NodeId, b: NodeId) => number {
+    const rank = new Map((order ?? []).map((id, index) => [id, index]));
     const labels = nodeLabelMap(graph);
+    return (a, b) => {
+        const rankA = rank.get(a) ?? Number.POSITIVE_INFINITY;
+        const rankB = rank.get(b) ?? Number.POSITIVE_INFINITY;
+        if (rankA !== rankB) return rankA - rankB;
+        return compareLabels(labels.get(a) ?? '', labels.get(b) ?? '');
+    };
+}
+
+export function orderedNodes(graph: Graph, order?: NodeId[]): GraphNode[] {
+    const compare = orderComparator(graph, order);
+    return [...graph.nodes].sort((a, b) => compare(a.id, b.id));
+}
+
+export function buildAdjacency(graph: Graph, order?: NodeId[]): Map<NodeId, AdjacencyEntry[]> {
+    const compare = orderComparator(graph, order);
     const adjacency = new Map<NodeId, AdjacencyEntry[]>();
     graph.nodes.forEach((node) => adjacency.set(node.id, []));
 
@@ -34,15 +50,18 @@ export function buildAdjacency(graph: Graph): Map<NodeId, AdjacencyEntry[]> {
 
     adjacency.forEach((entries) => {
         entries.sort((a, b) => {
-            const byLabel = compareLabels(labels.get(a.to) ?? '', labels.get(b.to) ?? '');
-            return byLabel !== 0 ? byLabel : a.edge.weight - b.edge.weight;
+            const byOrder = compare(a.to, b.to);
+            return byOrder !== 0 ? byOrder : weightOf(a.edge) - weightOf(b.edge);
         });
     });
 
     return adjacency;
 }
 
-export function buildReverseAdjacency(graph: Graph): Map<NodeId, AdjacencyEntry[]> {
+export function buildReverseAdjacency(
+    graph: Graph,
+    order?: NodeId[]
+): Map<NodeId, AdjacencyEntry[]> {
     const reversed: Graph = {
         nodes: graph.nodes,
         edges: graph.edges.map((edge) => ({
@@ -51,7 +70,7 @@ export function buildReverseAdjacency(graph: Graph): Map<NodeId, AdjacencyEntry[
             target: edge.directed ? edge.source : edge.target,
         })),
     };
-    return buildAdjacency(reversed);
+    return buildAdjacency(reversed, order);
 }
 
 export function idleStates(graph: Graph): {
@@ -78,7 +97,19 @@ export function hasUndirectedEdges(graph: Graph): boolean {
 }
 
 export function hasNegativeWeights(graph: Graph): boolean {
-    return graph.edges.some((edge) => edge.weight < 0);
+    return graph.edges.some((edge) => weightOf(edge) < 0);
+}
+
+export function hasWeight(edge: GraphEdge): boolean {
+    return typeof edge.weight === 'number' && Number.isFinite(edge.weight);
+}
+
+export function weightOf(edge: GraphEdge): number {
+    return hasWeight(edge) ? (edge.weight as number) : 1;
+}
+
+export function isWeighted(graph: Graph): boolean {
+    return graph.edges.some(hasWeight);
 }
 
 export function formatWeight(weight: number): string {

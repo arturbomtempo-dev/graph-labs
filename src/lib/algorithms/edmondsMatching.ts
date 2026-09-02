@@ -1,4 +1,4 @@
-import { hasDirectedEdges, nodeLabelMap, sortedNodes } from '../graph/helpers';
+import { hasDirectedEdges, nodeLabelMap, orderedNodes } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, NodeId, TraceTable } from '../graph/types';
 import { requireEdges, requireNodes } from './shared';
@@ -15,7 +15,7 @@ export const edmondsMatching: AlgorithmDefinition = {
     needsEnd: false,
     constraints: [
         'Exige grafo não direcionado',
-        'Ignora os custos das arestas',
+        'Ignora os pesos das arestas',
         'Trata grafo genérico, não apenas bipartido',
     ],
     validate: (context) => {
@@ -27,10 +27,10 @@ export const edmondsMatching: AlgorithmDefinition = {
         }
         return errors;
     },
-    run: ({ graph }) => {
+    run: ({ graph, order }) => {
         const builder = createTraceBuilder(graph);
         const labels = nodeLabelMap(graph);
-        const nodes = sortedNodes(graph);
+        const nodes = orderedNodes(graph, order);
         const size = nodes.length;
         const indexOf = new Map<NodeId, number>(nodes.map((node, position) => [node.id, position]));
         const name = (i: number) => labels.get(nodes[i].id) ?? '';

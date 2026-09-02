@@ -1,4 +1,4 @@
-import { formatWeight, nodeLabelMap } from '../graph/helpers';
+import { formatWeight, nodeLabelMap, weightOf } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmTrace, Graph, NodeId } from '../graph/types';
 import {
@@ -22,11 +22,12 @@ export function runAugmentingMethod(
     graph: Graph,
     source: NodeId,
     sink: NodeId,
-    options: AugmentingMethodOptions
+    options: AugmentingMethodOptions,
+    order?: NodeId[]
 ): AlgorithmTrace {
     const builder = createTraceBuilder(graph);
     const labels = nodeLabelMap(graph);
-    const network = createResidualNetwork(graph);
+    const network = createResidualNetwork(graph, order);
 
     let maxFlow = 0;
     let iteration = 0;
@@ -36,7 +37,7 @@ export function runAugmentingMethod(
         graph.edges.forEach((edge) => {
             builder.setEdgeBadge(
                 edge.id,
-                `${formatWeight(network.edgeFlow(edge.id))}/${formatWeight(edge.weight)}`
+                `${formatWeight(network.edgeFlow(edge.id))}/${formatWeight(weightOf(edge))}`
             );
         });
     };
@@ -54,7 +55,10 @@ export function runAugmentingMethod(
         metrics: [{ label: 'Valor do fluxo', value: '0' }],
     });
 
-    const totalCapacity = graph.edges.reduce((total, edge) => total + Math.max(0, edge.weight), 0);
+    const totalCapacity = graph.edges.reduce(
+        (total, edge) => total + Math.max(0, weightOf(edge)),
+        0
+    );
     const iterationLimit = Math.min(2000, Math.ceil(totalCapacity) + graph.edges.length + 50);
 
     while (iteration < iterationLimit) {
@@ -68,7 +72,7 @@ export function runAugmentingMethod(
             const cutEdges = graph.edges.filter(
                 (edge) => inCut.has(edge.source) && !inCut.has(edge.target)
             );
-            const cutCapacity = cutEdges.reduce((total, edge) => total + edge.weight, 0);
+            const cutCapacity = cutEdges.reduce((total, edge) => total + weightOf(edge), 0);
 
             cutEdges.forEach((edge) => builder.setEdge(edge.id, 'reject'));
             graph.nodes.forEach((node) => {

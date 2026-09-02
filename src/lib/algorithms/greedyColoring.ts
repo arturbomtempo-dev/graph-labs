@@ -1,4 +1,4 @@
-import { buildAdjacency, hasDirectedEdges, sortedNodes } from '../graph/helpers';
+import { buildAdjacency, hasDirectedEdges, orderedNodes } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, GraphNode, NodeId, TraceTable } from '../graph/types';
 import { requireNodes } from './shared';
@@ -63,35 +63,35 @@ export const greedyColoring: AlgorithmDefinition = {
         }
         return errors;
     },
-    run: ({ graph }) => {
+    run: ({ graph, order }) => {
         const builder = createTraceBuilder(graph);
-        const adjacency = buildAdjacency(graph);
-        const order = sortedNodes(graph);
-        const degree = undirectedDegrees(adjacency, order);
+        const adjacency = buildAdjacency(graph, order);
+        const sequence = orderedNodes(graph, order);
+        const degree = undirectedDegrees(adjacency, sequence);
 
         const color = new Map<NodeId, number>();
         let used = 0;
 
         const snapshot = (highlight?: NodeId) => ({
-            tables: [colorTable('greedy-colors', order, color, degree, highlight)],
+            tables: [colorTable('greedy-colors', sequence, color, degree, highlight)],
             metrics: [
                 { label: 'Cores utilizadas', value: String(used) },
                 {
                     label: 'Δ(G)',
-                    value: String(Math.max(0, ...order.map((n) => degree.get(n.id) ?? 0))),
+                    value: String(Math.max(0, ...sequence.map((n) => degree.get(n.id) ?? 0))),
                 },
             ],
         });
 
         builder.commit({
             title: 'Inicialização',
-            description: `Nenhum vértice está colorido. Os vértices serão considerados na ordem ${order
+            description: `Nenhum vértice está colorido. Os vértices serão considerados na ordem ${sequence
                 .map((node) => node.label)
                 .join(', ')}. Qualquer ordem é válida, mas o resultado depende dela.`,
             ...snapshot(),
         });
 
-        for (const node of order) {
+        for (const node of sequence) {
             builder.setNode(node.id, 'active');
             const neighbours = adjacency.get(node.id) ?? [];
             const forbidden = new Set<number>();
@@ -124,7 +124,7 @@ export const greedyColoring: AlgorithmDefinition = {
             });
         }
 
-        const maxDegree = Math.max(0, ...order.map((node) => degree.get(node.id) ?? 0));
+        const maxDegree = Math.max(0, ...sequence.map((node) => degree.get(node.id) ?? 0));
 
         builder.commit({
             title: 'Coloração concluída',

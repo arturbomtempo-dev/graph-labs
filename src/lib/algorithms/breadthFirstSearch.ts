@@ -1,4 +1,4 @@
-import { buildAdjacency, nodeLabelMap, sortedNodes } from '../graph/helpers';
+import { buildAdjacency, nodeLabelMap, orderedNodes, sortedNodes } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, NodeId, TraceRow, TraceTable } from '../graph/types';
 import { labelOf, requireNodes, requireStart } from './shared';
@@ -17,13 +17,13 @@ export const breadthFirstSearch: AlgorithmDefinition = {
     needsEnd: false,
     constraints: [
         'Aceita arestas direcionadas e não direcionadas',
-        'Ignora os custos das arestas',
+        'Ignora os pesos das arestas',
         'Classifica as arestas em pai, tio, irmão e primo',
     ],
     validate: (context) => [...requireNodes(context), ...requireStart(context)],
-    run: ({ graph, startId }) => {
+    run: ({ graph, startId, order }) => {
         const builder = createTraceBuilder(graph);
-        const adjacency = buildAdjacency(graph);
+        const adjacency = buildAdjacency(graph, order);
         const labels = nodeLabelMap(graph);
         const root = startId as NodeId;
 
@@ -207,7 +207,7 @@ export const breadthFirstSearch: AlgorithmDefinition = {
 
         startSearch(root, true);
 
-        sortedNodes(graph)
+        orderedNodes(graph, order)
             .filter((node) => !marked(node.id))
             .forEach((node) => startSearch(node.id, false));
 

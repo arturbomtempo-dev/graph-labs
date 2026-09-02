@@ -11,7 +11,7 @@ export interface GraphEdge {
     id: string;
     source: NodeId;
     target: NodeId;
-    weight: number;
+    weight?: number;
     directed: boolean;
 }
 
@@ -74,6 +74,7 @@ export interface AlgorithmContext {
     graph: Graph;
     startId: NodeId | null;
     endId: NodeId | null;
+    order?: NodeId[];
 }
 
 export type AlgorithmCategory =

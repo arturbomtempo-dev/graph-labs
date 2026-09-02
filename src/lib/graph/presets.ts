@@ -135,7 +135,7 @@ export const presets: GraphPreset[] = [
                     { label: 'A', x: 290, y: 90 },
                     { label: 'B', x: 290, y: 310 },
                     { label: 'C', x: 480, y: 200 },
-                    { label: 'D', x: 650, y: 200 },
+                    { label: 'D', x: 650, y: 330 },
                 ],
                 [
                     { source: 'S', target: 'A', weight: 6, directed: true },
@@ -327,11 +327,11 @@ export const presets: GraphPreset[] = [
         build: () =>
             assemble(
                 [
-                    { label: 'A', x: 110, y: 400 },
-                    { label: 'B', x: 130, y: 130 },
-                    { label: 'C', x: 330, y: 90 },
-                    { label: 'D', x: 330, y: 400 },
-                    { label: 'E', x: 520, y: 240 },
+                    { label: 'A', x: 660, y: 400 },
+                    { label: 'B', x: 150, y: 90 },
+                    { label: 'C', x: 400, y: 90 },
+                    { label: 'D', x: 480, y: 300 },
+                    { label: 'E', x: 120, y: 300 },
                 ],
                 [
                     { source: 'A', target: 'D', weight: 1, directed: false },
@@ -352,12 +352,12 @@ export const presets: GraphPreset[] = [
         build: () =>
             assemble(
                 [
-                    { label: 'A', x: 110, y: 90 },
-                    { label: 'B', x: 430, y: 90 },
-                    { label: 'C', x: 110, y: 250 },
-                    { label: 'D', x: 430, y: 250 },
-                    { label: 'E', x: 110, y: 410 },
-                    { label: 'F', x: 430, y: 410 },
+                    { label: 'A', x: 320, y: 60 },
+                    { label: 'D', x: 484, y: 155 },
+                    { label: 'E', x: 484, y: 345 },
+                    { label: 'B', x: 320, y: 440 },
+                    { label: 'C', x: 156, y: 345 },
+                    { label: 'F', x: 156, y: 155 },
                 ],
                 [
                     { source: 'A', target: 'D', weight: 1, directed: false },

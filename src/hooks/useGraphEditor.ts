@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createEdgeId, createNodeId, edgeExists, nextNodeLabel } from '@/lib/graph/helpers';
+import { refineLayout } from '@/lib/graph/layout';
 import { presets } from '@/lib/graph/presets';
 import type { Graph, GraphEdge, NodeId } from '@/lib/graph/types';
 
 const STORAGE_KEY = 'graph-labs-graph';
+const AUTO_ARRANGE_KEY = 'graph-labs-auto-arrange';
 const HISTORY_LIMIT = 60;
 
 interface History {
@@ -27,18 +29,28 @@ function readStoredGraph(): Graph {
     }
 }
 
+function readAutoArrange(): boolean {
+    if (typeof window === 'undefined') return true;
+    return window.localStorage.getItem(AUTO_ARRANGE_KEY) !== 'off';
+}
+
 export function useGraphEditor() {
     const [history, setHistory] = useState<History>(() => ({
         past: [],
         present: readStoredGraph(),
         future: [],
     }));
+    const [autoArrange, setAutoArrange] = useState<boolean>(readAutoArrange);
 
     const graph = history.present;
 
     useEffect(() => {
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(graph));
     }, [graph]);
+
+    useEffect(() => {
+        window.localStorage.setItem(AUTO_ARRANGE_KEY, autoArrange ? 'on' : 'off');
+    }, [autoArrange]);
 
     const apply = useCallback((updater: (current: Graph) => Graph, record = true) => {
         setHistory((current) => {
@@ -142,18 +154,33 @@ export function useGraphEditor() {
             apply((current) => {
                 if (edgeExists(current, source, target)) return current;
                 created = true;
-                return {
+                const next: Graph = {
                     ...current,
                     edges: [
                         ...current.edges,
                         { id: createEdgeId(), source, target, weight, directed },
                     ],
                 };
+                // A sugestão de posicionamento entra no mesmo passo do histórico que a aresta,
+                // então um único desfazer volta tudo.
+                return autoArrange ? (refineLayout(next) ?? next) : next;
             });
             return created;
         },
-        [apply]
+        [apply, autoArrange]
     );
+
+    /** Reorganiza sob demanda, sem depender de uma nova aresta. */
+    const arrangeNow = useCallback(() => {
+        let changed = false;
+        apply((current) => {
+            const next = refineLayout(current);
+            if (!next) return current;
+            changed = true;
+            return next;
+        });
+        return changed;
+    }, [apply]);
 
     const updateEdge = useCallback(
         (id: string, patch: Partial<Omit<GraphEdge, 'id'>>) => {
@@ -236,5 +263,8 @@ export function useGraphEditor() {
         clear,
         loadPreset,
         replaceGraph,
+        autoArrange,
+        setAutoArrange,
+        arrangeNow,
     };
 }

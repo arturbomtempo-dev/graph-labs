@@ -5,9 +5,11 @@ import {
     MousePointer2,
     Plus,
     Redo2,
+    Sparkles,
     Spline,
     Trash2,
     Undo2,
+    Wand2,
 } from 'lucide-react';
 import { IconButton } from '@/components/IconButton';
 import { cn } from '@/lib/utils/cn';
@@ -23,6 +25,9 @@ interface GraphToolbarProps {
     onClear: () => void;
     defaultDirected: boolean;
     onDefaultDirectedChange: (directed: boolean) => void;
+    autoArrange: boolean;
+    onAutoArrangeChange: (enabled: boolean) => void;
+    onArrangeNow: () => void;
     hint: string;
 }
 
@@ -43,6 +48,9 @@ export function GraphToolbar({
     onClear,
     defaultDirected,
     onDefaultDirectedChange,
+    autoArrange,
+    onAutoArrangeChange,
+    onArrangeNow,
     hint,
 }: GraphToolbarProps) {
     return (
@@ -98,6 +106,26 @@ export function GraphToolbar({
                     icon={<ArrowRight size={15} />}
                     active={defaultDirected}
                     onClick={() => onDefaultDirectedChange(true)}
+                />
+            </div>
+
+            <div className="bg-surface/90 border-line shadow-soft pointer-events-auto flex items-center gap-0.5 rounded-xl border p-1 backdrop-blur-md">
+                <IconButton
+                    label={
+                        autoArrange
+                            ? 'Sugestão de posicionamento ligada'
+                            : 'Sugestão de posicionamento desligada'
+                    }
+                    size="sm"
+                    icon={<Wand2 size={15} />}
+                    active={autoArrange}
+                    onClick={() => onAutoArrangeChange(!autoArrange)}
+                />
+                <IconButton
+                    label="Reorganizar agora"
+                    size="sm"
+                    icon={<Sparkles size={15} />}
+                    onClick={onArrangeNow}
                 />
             </div>
 

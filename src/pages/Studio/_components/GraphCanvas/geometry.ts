@@ -1,6 +1,7 @@
+import { NODE_RADIUS } from '@/lib/graph/layout';
 import type { Graph, GraphEdge, GraphNode, NodeId } from '@/lib/graph/types';
 
-export const NODE_RADIUS = 24;
+export { NODE_RADIUS };
 
 export interface Point {
     x: number;

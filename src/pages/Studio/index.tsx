@@ -233,6 +233,9 @@ export function Studio() {
                     onClear={editor.clear}
                     defaultDirected={defaultDirected}
                     onDefaultDirectedChange={setDefaultDirected}
+                    autoArrange={editor.autoArrange}
+                    onAutoArrangeChange={editor.setAutoArrange}
+                    onArrangeNow={editor.arrangeNow}
                     hint={toolHints[tool]}
                 />
 

@@ -6,6 +6,10 @@ import { labelOf, requireNodes, requireStart } from './shared';
 type Color = 'white' | 'gray' | 'black';
 type EdgeKind = 'Árvore' | 'Retorno' | 'Avanço' | 'Cruzamento';
 
+/** Par ordenado (v, w) em grafo direcionado, não ordenado {v, w} caso contrário. */
+const pairOf = (directed: boolean, from: string, to: string) =>
+    directed ? `(${from}, ${to})` : `{${from}, ${to}}`;
+
 export const depthFirstSearch: AlgorithmDefinition = {
     id: 'dfs',
     name: 'Busca em Profundidade',
@@ -55,7 +59,7 @@ export const depthFirstSearch: AlgorithmDefinition = {
                     vertex: node.label,
                     discovery: String(discovery.get(node.id) ?? 0),
                     finish: String(finish.get(node.id) ?? 0),
-                    parent: labels.get(parent.get(node.id) ?? '') ?? '—',
+                    parent: labels.get(parent.get(node.id) ?? '') ?? '-',
                 },
             }));
             return {
@@ -84,7 +88,9 @@ export const depthFirstSearch: AlgorithmDefinition = {
                     key: edge.id,
                     emphasis: classification.get(edge.id) === 'Árvore' ? 'done' : undefined,
                     cells: {
-                        edge: `${labels.get(edge.source)} ${edge.directed ? '→' : '—'} ${labels.get(edge.target)}`,
+                        edge: edge.directed
+                            ? `(${labels.get(edge.source)}, ${labels.get(edge.target)})`
+                            : `{${labels.get(edge.source)}, ${labels.get(edge.target)}}`,
                         kind: classification.get(edge.id) ?? '',
                     },
                 })),
@@ -100,7 +106,7 @@ export const depthFirstSearch: AlgorithmDefinition = {
         const snapshot = (highlight?: NodeId) => ({
             tables: [timesTable(highlight), edgesTable()],
             lists: [stackList()],
-            metrics: [{ label: 'Ordem de visita', value: visitOrder.join(' → ') || '—' }],
+            metrics: [{ label: 'Ordem de visita', value: visitOrder.join(' → ') || '-' }],
         });
 
         builder.commit({
@@ -136,7 +142,7 @@ export const depthFirstSearch: AlgorithmDefinition = {
                     classification.set(entry.edge.id, 'Árvore');
                     builder.setEdge(entry.edge.id, 'done');
                     builder.commit({
-                        title: `Aresta de árvore ${labelOf(graph, current)} ${entry.edge.directed ? '→' : '—'} ${labelOf(graph, entry.to)}`,
+                        title: `Aresta de árvore ${pairOf(entry.edge.directed, labelOf(graph, current), labelOf(graph, entry.to))}`,
                         description: `TD[${labelOf(graph, entry.to)}] = 0, ou seja, ${labelOf(graph, entry.to)} é visitado pela 1ª vez: pai[${labelOf(graph, entry.to)}] = ${labelOf(graph, current)} e a busca aprofunda por essa aresta.`,
                         ...snapshot(entry.to),
                     });
@@ -165,7 +171,11 @@ export const depthFirstSearch: AlgorithmDefinition = {
                     classification.set(entry.edge.id, kind);
                     builder.setEdge(entry.edge.id, kind === 'Retorno' ? 'reject' : 'frontier');
 
-                    const arrow = entry.edge.directed ? '→' : '—';
+                    const pair = pairOf(
+                        entry.edge.directed,
+                        labelOf(graph, current),
+                        labelOf(graph, entry.to)
+                    );
                     const reason = entry.edge.directed
                         ? kind === 'Retorno'
                             ? `TT[${labelOf(graph, entry.to)}] = 0, logo ${labelOf(graph, entry.to)} é ancestral de ${labelOf(graph, current)}`
@@ -176,7 +186,7 @@ export const depthFirstSearch: AlgorithmDefinition = {
 
                     builder.commit({
                         title: `Aresta de ${kind.toLowerCase()}`,
-                        description: `${reason}. Portanto ${labelOf(graph, current)} ${arrow} ${labelOf(graph, entry.to)} é classificada como aresta de ${kind.toLowerCase()}.`,
+                        description: `${reason}. Portanto ${pair} é classificada como aresta de ${kind.toLowerCase()}.`,
                         ...snapshot(entry.to),
                     });
                 }

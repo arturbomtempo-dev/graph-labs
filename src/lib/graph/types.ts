@@ -79,9 +79,13 @@ export interface AlgorithmContext {
 export type AlgorithmCategory =
     | 'Busca em grafos'
     | 'Conectividade'
+    | 'Grafos eulerianos'
     | 'Árvore geradora mínima'
     | 'Caminho mínimo'
-    | 'Fluxo máximo';
+    | 'Fluxo máximo'
+    | 'Ordenação topológica'
+    | 'Emparelhamento'
+    | 'Coloração';
 
 export interface AlgorithmDefinition {
     id: string;

@@ -23,9 +23,13 @@ interface AlgorithmPanelProps {
 const categoryOrder: AlgorithmCategory[] = [
     'Busca em grafos',
     'Conectividade',
+    'Grafos eulerianos',
     'Árvore geradora mínima',
     'Caminho mínimo',
     'Fluxo máximo',
+    'Ordenação topológica',
+    'Emparelhamento',
+    'Coloração',
 ];
 
 export function AlgorithmPanel({
@@ -40,9 +44,10 @@ export function AlgorithmPanel({
     onRun,
 }: AlgorithmPanelProps) {
     const nodeOptions = sortedNodes(graph).map((node) => ({ value: node.id, label: node.label }));
-    const isFlow = selectedAlgorithm.id === 'ford-fulkerson';
+    const isFlow = selectedAlgorithm.category === 'Fluxo máximo';
     const isShortestPath = selectedAlgorithm.category === 'Caminho mínimo';
-    const showStart = selectedAlgorithm.needsStart || isShortestPath;
+    const showStart =
+        selectedAlgorithm.needsStart || isShortestPath || selectedAlgorithm.id === 'fleury';
     const showEnd = selectedAlgorithm.needsEnd || isShortestPath;
 
     return (
@@ -120,7 +125,9 @@ export function AlgorithmPanel({
                             hint={
                                 selectedAlgorithm.needsStart
                                     ? undefined
-                                    : 'Opcional: define de onde parte o caminho destacado.'
+                                    : selectedAlgorithm.id === 'fleury'
+                                      ? 'Opcional: com vértices de grau ímpar, o trajeto precisa partir de um deles.'
+                                      : 'Opcional: define de onde parte o caminho destacado.'
                             }
                             placeholder={selectedAlgorithm.needsStart ? 'Selecione' : 'Nenhum'}
                             options={nodeOptions}

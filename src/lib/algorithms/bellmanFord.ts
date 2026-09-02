@@ -125,7 +125,7 @@ export const bellmanFord: AlgorithmDefinition = {
                     builder.setNode(arc.to, 'frontier');
                     builder.setNodeBadge(arc.to, formatWeight(candidate));
                     builder.commit({
-                        title: `Aresta tensa (${labels.get(arc.from)}, ${labels.get(arc.to)}) — relaxada`,
+                        title: `Aresta tensa (${labels.get(arc.from)}, ${labels.get(arc.to)}): relaxada`,
                         description: `dist[${labels.get(arc.to)}] = ${formatDistance(currentDistance)} > dist[${labels.get(arc.from)}] + d = ${formatWeight(fromDistance)} + ${formatWeight(arc.edge.weight)} = ${formatWeight(candidate)}. Logo dist[${labels.get(arc.to)}] ← ${formatWeight(candidate)} e pred[${labels.get(arc.to)}] ← ${labels.get(arc.from)}.`,
                         tables: [table(arc.to)],
                         lists: [arcList()],

@@ -56,8 +56,8 @@ export const breadthFirstSearch: AlgorithmDefinition = {
                 cells: {
                     vertex: node.label,
                     index: marked(node.id) ? String(index.get(node.id)) : '0',
-                    level: marked(node.id) ? String(level.get(node.id)) : '—',
-                    parent: labels.get(parent.get(node.id) ?? '') ?? '—',
+                    level: marked(node.id) ? String(level.get(node.id)) : '-',
+                    parent: labels.get(parent.get(node.id) ?? '') ?? '-',
                 },
             }));
             return {
@@ -86,7 +86,9 @@ export const breadthFirstSearch: AlgorithmDefinition = {
                     key: edge.id,
                     emphasis: classification.get(edge.id) === 'Árvore (pai)' ? 'done' : undefined,
                     cells: {
-                        edge: `${labels.get(edge.source)} ${edge.directed ? '→' : '—'} ${labels.get(edge.target)}`,
+                        edge: edge.directed
+                            ? `(${labels.get(edge.source)}, ${labels.get(edge.target)})`
+                            : `{${labels.get(edge.source)}, ${labels.get(edge.target)}}`,
                         kind: classification.get(edge.id) ?? '',
                     },
                 })),
@@ -157,7 +159,7 @@ export const breadthFirstSearch: AlgorithmDefinition = {
                         builder.setEdge(entry.edge.id, 'done');
 
                         builder.commit({
-                            title: `Aresta de árvore (pai) ${labelOf(graph, current)} — ${labelOf(graph, neighbour)}`,
+                            title: `Aresta de árvore (pai) {${labelOf(graph, current)}, ${labelOf(graph, neighbour)}}`,
                             description: `${labelOf(graph, neighbour)} tinha L = 0, portanto é visitado pela 1ª vez: pai[${labelOf(graph, neighbour)}] = ${labelOf(graph, current)}, nível = nível[${labelOf(graph, current)}] + 1 = ${level.get(neighbour)} e L = ${time}. O vértice entra na fila.`,
                             ...snapshot(neighbour),
                         });
@@ -240,7 +242,7 @@ export const breadthFirstSearch: AlgorithmDefinition = {
             conclusions.push(
                 `Não alcançados a partir de ${labelOf(graph, root)}: ${unreachable
                     .map((node) => node.label)
-                    .join(', ')} — cada um iniciou uma nova árvore de largura.`
+                    .join(', ')}. Cada um deles iniciou uma nova árvore de largura.`
             );
         } else if (reachable.length === graph.nodes.length) {
             conclusions.push(

@@ -9,9 +9,13 @@ const categories: (AlgorithmCategory | 'Todos')[] = [
     'Todos',
     'Busca em grafos',
     'Conectividade',
+    'Grafos eulerianos',
     'Árvore geradora mínima',
     'Caminho mínimo',
     'Fluxo máximo',
+    'Ordenação topológica',
+    'Emparelhamento',
+    'Coloração',
 ];
 
 export function Algorithms() {

@@ -24,7 +24,7 @@ export const dijkstra: AlgorithmDefinition = {
     shortName: 'Dijkstra',
     category: 'Caminho mínimo',
     tagline:
-        '"Fecha" um vértice por iteração — sempre o de menor dist — e relaxa as arestas tensas que saem dele.',
+        '"Fecha" um vértice por iteração, sempre o de menor dist, e relaxa as arestas tensas que saem dele.',
     complexity: 'O(n²)',
     needsStart: true,
     needsEnd: false,
@@ -146,7 +146,7 @@ export const dijkstra: AlgorithmDefinition = {
                     builder.setNode(entry.to, 'frontier');
                     builder.setNodeBadge(entry.to, formatWeight(relaxed));
                     builder.commit({
-                        title: `Aresta tensa (${labels.get(current)}, ${labels.get(entry.to)}) — relaxada`,
+                        title: `Aresta tensa (${labels.get(current)}, ${labels.get(entry.to)}): relaxada`,
                         description: `dist[${labels.get(entry.to)}] = ${formatDistance(currentDistance)} > dist[${labels.get(current)}] + d = ${formatWeight(best)} + ${formatWeight(entry.edge.weight)} = ${formatWeight(relaxed)}. Logo dist[${labels.get(entry.to)}] ← ${formatWeight(relaxed)} e pred[${labels.get(entry.to)}] ← ${labels.get(current)}.`,
                         tables: [table(entry.to)],
                         lists: [openList()],

@@ -46,12 +46,21 @@ export const markerFillClasses: Record<ElementState, string> = {
 };
 
 export const groupPalette = [
-    'stroke-state-active',
-    'stroke-state-done',
-    'stroke-state-frontier',
-    'stroke-state-path',
-    'stroke-state-reject',
+    'var(--color-group-1)',
+    'var(--color-group-2)',
+    'var(--color-group-3)',
+    'var(--color-group-4)',
+    'var(--color-group-5)',
+    'var(--color-group-6)',
+    'var(--color-group-7)',
+    'var(--color-group-8)',
 ];
+
+export function groupColor(group: number): string {
+    return groupPalette[
+        ((group % groupPalette.length) + groupPalette.length) % groupPalette.length
+    ];
+}
 
 export const elementStates: ElementState[] = [
     'idle',

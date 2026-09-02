@@ -75,7 +75,7 @@ export const prim: AlgorithmDefinition = {
                 cells: {
                     vertex: node.label,
                     keyValue: formatDistance(key.get(node.id) ?? Number.POSITIVE_INFINITY),
-                    parent: labels.get(parent.get(node.id) ?? '') ?? '—',
+                    parent: labels.get(parent.get(node.id) ?? '') ?? '-',
                     status: inTree.has(node.id) ? 'em V(T)' : 'fora de V(T)',
                 },
             })),
@@ -184,7 +184,7 @@ export const prim: AlgorithmDefinition = {
 
         return builder.build([
             `Custo total da árvore geradora de custo mínimo: C(T) = ${formatWeight(totalWeight)}.`,
-            `|E(T)| = ${treeEdges.length} — uma árvore geradora de ${inTree.size} vértices tem exatamente |V| − 1 = ${Math.max(inTree.size - 1, 0)} aresta(s).`,
+            `|E(T)| = ${treeEdges.length}. Uma árvore geradora de ${inTree.size} vértices tem exatamente |V| − 1 = ${Math.max(inTree.size - 1, 0)} aresta(s).`,
             inTree.size < graph.nodes.length
                 ? 'O grafo é desconexo, portanto o resultado é a AGM apenas do componente conexo que contém a raiz.'
                 : 'Todos os vértices foram selecionados: T é uma árvore geradora de G.',

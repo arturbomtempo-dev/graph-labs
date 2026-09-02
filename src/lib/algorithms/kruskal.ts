@@ -38,7 +38,7 @@ export const kruskal: AlgorithmDefinition = {
         const labels = nodeLabelMap(graph);
 
         // Estrutura auxiliar que responde, em tempo quase constante, se dois vértices já
-        // estão ligados por arestas de E(T) — isto é, se a aresta analisada formaria ciclo.
+        // estão ligados por arestas de E(T), isto é, se a aresta analisada formaria ciclo.
         const parent = new Map<NodeId, NodeId>();
         const rank = new Map<NodeId, number>();
         graph.nodes.forEach((node) => {
@@ -115,12 +115,12 @@ export const kruskal: AlgorithmDefinition = {
                             ? 'reject'
                             : undefined,
                 cells: {
-                    edge: `${labels.get(edge.source)} — ${labels.get(edge.target)}`,
+                    edge: `{${labels.get(edge.source)}, ${labels.get(edge.target)}}`,
                     weight: formatWeight(edge.weight),
                     decision: accepted.includes(edge.id)
                         ? 'entra em E(T)'
                         : rejected.includes(edge.id)
-                          ? 'forma ciclo — ignorada'
+                          ? 'forma ciclo, ignorada'
                           : index === examinedIndex
                             ? 'em análise'
                             : 'aguardando',
@@ -183,7 +183,7 @@ export const kruskal: AlgorithmDefinition = {
             const createsCycle = rootSource === rootTarget;
 
             builder.commit({
-                title: `Analisa {${labels.get(edge.source)}, ${labels.get(edge.target)}} — custo ${formatWeight(edge.weight)}`,
+                title: `Analisa {${labels.get(edge.source)}, ${labels.get(edge.target)}} de custo ${formatWeight(edge.weight)}`,
                 description: createsCycle
                     ? `Os dois extremos já estão ligados por arestas de E(T), portanto essa aresta formaria um ciclo.`
                     : `Os extremos estão em componentes diferentes da floresta parcial, portanto a aresta não forma ciclo com as arestas de E(T).`,
@@ -209,7 +209,7 @@ export const kruskal: AlgorithmDefinition = {
                     ? 'Aresta ignorada (forma ciclo)'
                     : 'Aresta acrescentada a E(T)',
                 description: createsCycle
-                    ? `A aresta é ignorada e a floresta parcial permanece inalterada — por isso podem ser necessárias mais de n − 1 iterações.`
+                    ? `A aresta é ignorada e a floresta parcial permanece inalterada. Por isso podem ser necessárias mais de n − 1 iterações.`
                     : `A aresta entra em E(T) e os componentes de ${labels.get(edge.source)} e ${labels.get(edge.target)} passam a ser um só.`,
                 tables: [edgeQueueTable(), setsTable()],
                 metrics: metrics(),

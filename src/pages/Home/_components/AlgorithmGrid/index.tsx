@@ -8,7 +8,7 @@ export function AlgorithmGrid() {
             <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                     <h2 className="text-ink text-xl font-semibold tracking-tight sm:text-2xl">
-                        Nove métodos, execução fiel ao pseudocódigo da disciplina
+                        Da busca em grafos à coloração, na ordem da disciplina
                     </h2>
                     <p className="text-ink-soft mt-1.5 max-w-2xl text-sm leading-relaxed">
                         Cada execução gera um traço completo: marcação dos vértices, tabelas

@@ -22,6 +22,7 @@ import {
     edgeStrokeClasses,
     edgeStrokeWidth,
     elementStates,
+    groupColor,
     markerFillClasses,
     nodeFillClasses,
     nodeStrokeWidth,
@@ -438,6 +439,7 @@ export function GraphCanvas({
                         const isSelected = selectedNodeId === node.id;
                         const isPending = pendingSourceId === node.id;
                         const badge = step?.nodeBadges?.[node.id];
+                        const group = step?.nodeGroups?.[node.id];
 
                         return (
                             <g
@@ -454,6 +456,15 @@ export function GraphCanvas({
                                     <circle
                                         r={NODE_RADIUS}
                                         className="fill-state-active animate-pulse-ring pointer-events-none"
+                                    />
+                                ) : null}
+                                {group !== undefined ? (
+                                    <circle
+                                        r={NODE_RADIUS + 3.5}
+                                        fill="none"
+                                        stroke={groupColor(group)}
+                                        strokeWidth={3}
+                                        className="pointer-events-none"
                                     />
                                 ) : null}
                                 {startId === node.id || endId === node.id ? (

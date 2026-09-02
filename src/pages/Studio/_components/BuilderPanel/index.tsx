@@ -175,7 +175,7 @@ export function BuilderPanel({
                         <Select
                             label="De"
                             options={nodeOptions}
-                            placeholder="—"
+                            placeholder="Selecione"
                             value={source}
                             onChange={(event) => {
                                 setSource(event.target.value);
@@ -186,7 +186,7 @@ export function BuilderPanel({
                         <Select
                             label="Para"
                             options={nodeOptions}
-                            placeholder="—"
+                            placeholder="Selecione"
                             value={target}
                             onChange={(event) => {
                                 setTarget(event.target.value);
@@ -296,7 +296,7 @@ export function BuilderPanel({
                                 >
                                     <span className="truncate">{labelOf(edge.source)}</span>
                                     <span className="text-ink-faint shrink-0">
-                                        {edge.directed ? '→' : '—'}
+                                        {edge.directed ? '→' : '-'}
                                     </span>
                                     <span className="truncate">{labelOf(edge.target)}</span>
                                 </button>

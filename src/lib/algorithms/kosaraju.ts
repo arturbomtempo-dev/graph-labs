@@ -74,7 +74,7 @@ export const kosaraju: AlgorithmDefinition = {
         };
 
         builder.commit({
-            title: 'Passo 1 — busca em profundidade em G',
+            title: 'Passo 1: busca em profundidade em G',
             description:
                 'A primeira busca em profundidade percorre G e empilha cada vértice no momento em que seu tempo de término TT é definido.',
             lists: [orderList()],
@@ -114,7 +114,7 @@ export const kosaraju: AlgorithmDefinition = {
         graph.edges.forEach((edge) => builder.setEdge(edge.id, 'idle'));
 
         builder.commit({
-            title: 'Passo 2 — construção do grafo reverso Gᴿ',
+            title: 'Passo 2: construção do grafo reverso Gᴿ',
             description: `Todas as arestas são invertidas: se (v, w) ∈ E(G) então (w, v) ∈ E(Gᴿ). A segunda busca percorrerá Gᴿ em ordem decrescente de TT: ${[
                 ...finishOrder,
             ]
@@ -167,7 +167,7 @@ export const kosaraju: AlgorithmDefinition = {
         });
 
         builder.commit({
-            title: 'Passo 3 — componentes identificados',
+            title: 'Passo 3: componentes identificados',
             description: `Cada árvore da floresta de profundidade obtida em Gᴿ é um componente fortemente conexo: G possui ${componentIndex} componente(s) f-conexo(s). As arestas destacadas ligam vértices de um mesmo componente.`,
             tables: [componentsTable()],
         });

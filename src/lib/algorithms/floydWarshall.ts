@@ -88,7 +88,7 @@ export const floydWarshall: AlgorithmDefinition = {
                     ...Object.fromEntries(
                         nodes.map((to, j) => [
                             to.id,
-                            pred[i][j] ? (labelOf(graph, pred[i][j]) ?? '—') : '—',
+                            pred[i][j] ? (labelOf(graph, pred[i][j]) ?? '-') : '-',
                         ])
                     ),
                 },

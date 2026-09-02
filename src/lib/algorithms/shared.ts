@@ -2,8 +2,8 @@ import { formatDistance, nodeLabelMap, sortedNodes } from '../graph/helpers';
 import type { AlgorithmContext, Graph, NodeId, TraceRow, TraceTable } from '../graph/types';
 
 export function labelOf(graph: Graph, id: NodeId | null | undefined): string {
-    if (!id) return '—';
-    return graph.nodes.find((node) => node.id === id)?.label ?? '—';
+    if (!id) return '-';
+    return graph.nodes.find((node) => node.id === id)?.label ?? '-';
 }
 
 export function requireStart(context: AlgorithmContext): string[] {
@@ -49,7 +49,7 @@ export function distanceTable(
             cells: {
                 vertex: node.label,
                 distance: formatDistance(distance.get(node.id) ?? Number.POSITIVE_INFINITY),
-                parent: labels.get(parent.get(node.id) ?? '') ?? '—',
+                parent: labels.get(parent.get(node.id) ?? '') ?? '-',
             },
         };
     });

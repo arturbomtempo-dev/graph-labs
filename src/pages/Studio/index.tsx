@@ -77,7 +77,12 @@ export function Studio() {
         return orderedNodeIds.find((id) => id !== resolvedStartId) ?? null;
     }, [endId, nodeIds, algorithm.needsEnd, orderedNodeIds, resolvedStartId]);
 
-    const usesStart = algorithm.needsStart || algorithm.category === 'Caminho mínimo';
+    // Fleury aceita uma raiz opcional; os métodos de caminho mínimo aceitam um destino opcional.
+    const isFlow = algorithm.category === 'Fluxo máximo';
+    const usesStart =
+        algorithm.needsStart ||
+        algorithm.category === 'Caminho mínimo' ||
+        algorithm.id === 'fleury';
     const usesEnd = algorithm.needsEnd || algorithm.category === 'Caminho mínimo';
     const activeStartId = usesStart ? resolvedStartId : null;
     const activeEndId = usesEnd ? resolvedEndId : null;
@@ -205,8 +210,8 @@ export function Studio() {
                     pendingSourceId={pendingSourceId}
                     startId={activeStartId}
                     endId={activeEndId}
-                    startLabel={algorithm.id === 'ford-fulkerson' ? 'fonte' : 'raiz'}
-                    endLabel={algorithm.id === 'ford-fulkerson' ? 'sumidouro' : 'destino'}
+                    startLabel={isFlow ? 'fonte' : 'raiz'}
+                    endLabel={isFlow ? 'sumidouro' : 'destino'}
                     autoFitKey={autoFitKey}
                     onBackgroundClick={handleBackgroundClick}
                     onNodePointerDown={handleNodePointerDown}

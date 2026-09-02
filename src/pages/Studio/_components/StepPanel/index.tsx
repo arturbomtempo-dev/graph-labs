@@ -252,7 +252,7 @@ export function StepPanel({
                                                 key={column.key}
                                                 className="text-ink px-3 py-1.5 font-mono text-xs whitespace-nowrap"
                                             >
-                                                {row.cells[column.key] ?? '—'}
+                                                {row.cells[column.key] ?? '-'}
                                             </td>
                                         ))}
                                     </tr>

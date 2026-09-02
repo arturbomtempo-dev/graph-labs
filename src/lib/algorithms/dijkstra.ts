@@ -20,17 +20,18 @@ import {
 
 export const dijkstra: AlgorithmDefinition = {
     id: 'dijkstra',
-    name: 'Algoritmo de Dijkstra',
+    name: 'Método de Dijkstra',
     shortName: 'Dijkstra',
     category: 'Caminho mínimo',
     tagline:
-        'Caminhos mínimos de origem única: a cada iteração visita o vértice não visitado com a menor estimativa e relaxa suas arestas.',
-    complexity: 'O((n + m) log n)',
+        '"Fecha" um vértice por iteração — sempre o de menor dist — e relaxa as arestas tensas que saem dele.',
+    complexity: 'O(n²)',
     needsStart: true,
     needsEnd: false,
     constraints: [
         'Aceita arestas direcionadas e não direcionadas',
-        'Exige w : E → ℝ⁺ (sem pesos negativos)',
+        'Exige custos não negativos',
+        'Baseia-se no princípio da relaxação',
     ],
     validate: (context) => {
         const errors = [
@@ -40,7 +41,7 @@ export const dijkstra: AlgorithmDefinition = {
         ];
         if (hasNegativeWeights(context.graph)) {
             errors.push(
-                'Dijkstra exige w : E → ℝ⁺. Com arestas de peso negativo o método falha — use Bellman-Ford. Reponderar somando uma constante também não resolve.'
+                'O método de Dijkstra falha com arestas de custo negativo: use Bellman-Ford. Reponderar, adicionando uma constante a todas as arestas, também pode falhar.'
             );
         }
         return errors;
@@ -49,37 +50,38 @@ export const dijkstra: AlgorithmDefinition = {
         const builder = createTraceBuilder(graph);
         const adjacency = buildAdjacency(graph);
         const labels = nodeLabelMap(graph);
-        const source = startId as NodeId;
+        const root = startId as NodeId;
 
         const distance = new Map<NodeId, number>();
-        const parent = new Map<NodeId, NodeId | null>();
-        const parentEdge = new Map<NodeId, string | null>();
-        const settled = new Set<NodeId>();
+        const pred = new Map<NodeId, NodeId | null>();
+        const predEdge = new Map<NodeId, string | null>();
+        // S: conjunto dos vértices já "fechados".
+        const closed = new Set<NodeId>();
 
         graph.nodes.forEach((node) => {
             distance.set(node.id, Number.POSITIVE_INFINITY);
-            parent.set(node.id, null);
-            parentEdge.set(node.id, null);
+            pred.set(node.id, null);
+            predEdge.set(node.id, null);
         });
-        distance.set(source, 0);
-        builder.setNodeBadge(source, '0');
+        distance.set(root, 0);
+        builder.setNodeBadge(root, '0');
 
         const table = (highlight?: NodeId) =>
-            distanceTable(graph, distance, parent, {
+            distanceTable(graph, distance, pred, {
                 id: 'dijkstra-table',
-                title: 'Estimativas de caminho mínimo',
-                distanceLabel: 'd',
-                parentLabel: 'π',
+                title: 'dist e pred',
+                distanceLabel: 'dist',
+                parentLabel: 'pred',
                 highlight: highlight ? new Set([highlight]) : undefined,
-                settled,
+                settled: closed,
             });
 
-        const queueList = () => ({
+        const openList = () => ({
             id: 'open-set',
-            title: 'Q — vértices não visitados',
+            title: 'Vértices ainda não fechados',
             variant: 'set' as const,
             items: sortedNodes(graph)
-                .filter((node) => !settled.has(node.id))
+                .filter((node) => !closed.has(node.id))
                 .map(
                     (node) =>
                         `${node.label}: ${formatDistance(distance.get(node.id) ?? Number.POSITIVE_INFINITY)}`
@@ -88,16 +90,16 @@ export const dijkstra: AlgorithmDefinition = {
 
         builder.commit({
             title: 'Inicialização',
-            description: `d[${labelOf(graph, source)}] = 0 na origem e d[v] = ∞ nos demais, com π[v] = NULL. S = ∅ e Q recebe todos os vértices.`,
+            description: `dist[${labelOf(graph, root)}] = 0 na raiz e dist[v] = ∞ nos demais vértices, com pred[v] = nulo. Nenhum vértice foi fechado ainda, isto é, S = ∅.`,
             tables: [table()],
-            lists: [queueList()],
+            lists: [openList()],
         });
 
-        while (settled.size < graph.nodes.length) {
+        while (closed.size < graph.nodes.length) {
             let candidate: NodeId | null = null;
             let best = Number.POSITIVE_INFINITY;
             sortedNodes(graph).forEach((node) => {
-                if (settled.has(node.id)) return;
+                if (closed.has(node.id)) return;
                 const value = distance.get(node.id) ?? Number.POSITIVE_INFINITY;
                 if (value < best) {
                     best = value;
@@ -109,52 +111,52 @@ export const dijkstra: AlgorithmDefinition = {
                 builder.commit({
                     title: 'Vértices inalcançáveis',
                     description:
-                        'Todos os vértices restantes em Q têm d = ∞: eles não são alcançáveis a partir da origem e o algoritmo encerra.',
+                        'Todos os vértices ainda não fechados têm dist = ∞: eles não são alcançáveis a partir da raiz e o algoritmo encerra.',
                     tables: [table()],
-                    lists: [queueList()],
+                    lists: [openList()],
                 });
                 break;
             }
 
             const current: NodeId = candidate;
-            settled.add(current);
+            closed.add(current);
             builder.resetEdgesWithState('active', 'idle');
             builder.setNode(current, 'done');
 
-            const linkingEdge = parentEdge.get(current);
+            const linkingEdge = predEdge.get(current);
             if (linkingEdge) builder.setEdge(linkingEdge, 'done');
 
             builder.commit({
-                title: `ExtractMin(Q) = ${labels.get(current)}, d = ${formatWeight(best)}`,
-                description: `${labels.get(current)} é o vértice não visitado com a menor estimativa de caminho mais curto e passa a S. Como w : E → ℝ⁺, d[${labels.get(current)}] já é o peso do caminho mínimo definitivo.`,
+                title: `Fecha ${labels.get(current)} com dist = ${formatWeight(best)}`,
+                description: `${labels.get(current)} é o vértice não fechado com o menor valor de dist, portanto entra em S. Como não há custos negativos, dist[${labels.get(current)}] já é o custo definitivo do caminho mínimo desde a raiz.`,
                 tables: [table(current)],
-                lists: [queueList()],
+                lists: [openList()],
             });
 
             for (const entry of adjacency.get(current) ?? []) {
-                if (settled.has(entry.to)) continue;
-                const candidateDistance = best + entry.edge.weight;
+                if (closed.has(entry.to)) continue;
+                const relaxed = best + entry.edge.weight;
                 const currentDistance = distance.get(entry.to) ?? Number.POSITIVE_INFINITY;
                 builder.setEdge(entry.edge.id, 'active');
 
-                if (candidateDistance < currentDistance) {
-                    distance.set(entry.to, candidateDistance);
-                    parent.set(entry.to, current);
-                    parentEdge.set(entry.to, entry.edge.id);
+                if (relaxed < currentDistance) {
+                    distance.set(entry.to, relaxed);
+                    pred.set(entry.to, current);
+                    predEdge.set(entry.to, entry.edge.id);
                     builder.setNode(entry.to, 'frontier');
-                    builder.setNodeBadge(entry.to, formatWeight(candidateDistance));
+                    builder.setNodeBadge(entry.to, formatWeight(relaxed));
                     builder.commit({
-                        title: `Relaxa (${labels.get(current)}, ${labels.get(entry.to)})`,
-                        description: `d[${labels.get(entry.to)}] = ${formatDistance(currentDistance)} > d[${labels.get(current)}] + w(${labels.get(current)}, ${labels.get(entry.to)}) = ${formatWeight(best)} + ${formatWeight(entry.edge.weight)} = ${formatWeight(candidateDistance)}. Então d[${labels.get(entry.to)}] ← ${formatWeight(candidateDistance)} e π[${labels.get(entry.to)}] ← ${labels.get(current)}.`,
+                        title: `Aresta tensa (${labels.get(current)}, ${labels.get(entry.to)}) — relaxada`,
+                        description: `dist[${labels.get(entry.to)}] = ${formatDistance(currentDistance)} > dist[${labels.get(current)}] + d = ${formatWeight(best)} + ${formatWeight(entry.edge.weight)} = ${formatWeight(relaxed)}. Logo dist[${labels.get(entry.to)}] ← ${formatWeight(relaxed)} e pred[${labels.get(entry.to)}] ← ${labels.get(current)}.`,
                         tables: [table(entry.to)],
-                        lists: [queueList()],
+                        lists: [openList()],
                     });
                 } else {
                     builder.commit({
-                        title: `Aresta (${labels.get(current)}, ${labels.get(entry.to)}) não relaxa`,
-                        description: `d[${labels.get(current)}] + w(${labels.get(current)}, ${labels.get(entry.to)}) = ${formatWeight(best)} + ${formatWeight(entry.edge.weight)} = ${formatWeight(candidateDistance)} não é menor que d[${labels.get(entry.to)}] = ${formatDistance(currentDistance)}, então nada muda.`,
+                        title: `Aresta (${labels.get(current)}, ${labels.get(entry.to)}) não está tensa`,
+                        description: `dist[${labels.get(current)}] + d = ${formatWeight(best)} + ${formatWeight(entry.edge.weight)} = ${formatWeight(relaxed)} não é menor que dist[${labels.get(entry.to)}] = ${formatDistance(currentDistance)}, então nada muda.`,
                         tables: [table(entry.to)],
-                        lists: [queueList()],
+                        lists: [openList()],
                     });
                 }
             }
@@ -164,22 +166,22 @@ export const dijkstra: AlgorithmDefinition = {
         builder.resetEdgesWithState('frontier', 'idle');
 
         const conclusions = [
-            `Pesos dos caminhos mínimos a partir de ${labelOf(graph, source)}: ${sortedNodes(graph)
+            `dist[ ] final a partir da raiz ${labelOf(graph, root)}: ${sortedNodes(graph)
                 .map(
                     (node) =>
                         `${node.label} = ${formatDistance(distance.get(node.id) ?? Number.POSITIVE_INFINITY)}`
                 )
                 .join(', ')}.`,
-            'd[ ] guarda apenas os pesos dos caminhos mínimos; os caminhos em si são recuperados percorrendo a lista de predecessores π[ ].',
+            'dist[ ] guarda apenas os custos dos caminhos mínimos; os caminhos em si são recuperados percorrendo a lista de predecessores pred[ ].',
         ];
 
         if (endId && Number.isFinite(distance.get(endId) ?? Infinity)) {
-            const path = pathFromParents(parent, endId);
+            const path = pathFromParents(pred, endId);
             if (path) {
                 edgesAlongPath(graph, path).forEach((edgeId) => builder.setEdge(edgeId, 'path'));
                 path.forEach((nodeId) => builder.setNode(nodeId, 'path'));
                 conclusions.push(
-                    `Caminho mínimo até ${labelOf(graph, endId)}, obtido por π[ ]: ${path.map((id) => labels.get(id)).join(' → ')} (peso ${formatDistance(distance.get(endId) ?? Infinity)}).`
+                    `Caminho mínimo até ${labelOf(graph, endId)}, obtido por pred[ ]: ${path.map((id) => labels.get(id)).join(' → ')} (custo ${formatDistance(distance.get(endId) ?? Infinity)}).`
                 );
             }
         }
@@ -189,7 +191,7 @@ export const dijkstra: AlgorithmDefinition = {
             description:
                 endId && Number.isFinite(distance.get(endId) ?? Infinity)
                     ? `O caminho mínimo até ${labelOf(graph, endId)} está destacado em roxo.`
-                    : 'Todos os vértices alcançáveis foram visitados e estão em S com sua estimativa definitiva.',
+                    : 'Todos os vértices alcançáveis foram fechados com seu valor definitivo de dist.',
             tables: [table()],
         });
 

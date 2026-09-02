@@ -7,7 +7,7 @@ export function labelOf(graph: Graph, id: NodeId | null | undefined): string {
 }
 
 export function requireStart(context: AlgorithmContext): string[] {
-    if (!context.startId) return ['Selecione o vértice de origem.'];
+    if (!context.startId) return ['Selecione o vértice raiz.'];
     return [];
 }
 
@@ -59,8 +59,8 @@ export function distanceTable(
         title: options.title,
         columns: [
             { key: 'vertex', label: 'Vértice' },
-            { key: 'distance', label: options.distanceLabel ?? 'Distância' },
-            { key: 'parent', label: options.parentLabel ?? 'Predecessor' },
+            { key: 'distance', label: options.distanceLabel ?? 'dist' },
+            { key: 'parent', label: options.parentLabel ?? 'pred' },
         ],
         rows,
     };

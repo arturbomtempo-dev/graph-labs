@@ -7,11 +7,11 @@ const capabilities = [
         icon: MousePointerClick,
         title: 'Edição direta no canvas',
         description:
-            'Crie vértices com um clique, conecte-os arrastando o olhar de um ao outro e ajuste pesos e direção sem sair da tela.',
+            'Crie vértices com um clique, conecte-os arrastando o olhar de um ao outro e ajuste custos e direção sem sair da tela.',
     },
     {
         icon: Route,
-        title: 'Dirigido, não dirigido ou misto',
+        title: 'Direcionado, não direcionado ou misto',
         description:
             'Cada aresta guarda sua própria orientação. Os algoritmos validam o tipo de grafo exigido antes de executar.',
     },
@@ -19,7 +19,7 @@ const capabilities = [
         icon: TableProperties,
         title: 'Traço passo a passo',
         description:
-            'Filas, pilhas, conjuntos disjuntos e matrizes de distância acompanham a animação em cada iteração.',
+            'Filas, pilhas, tabelas de dist e pred e matrizes de distância acompanham a animação em cada iteração.',
     },
 ];
 

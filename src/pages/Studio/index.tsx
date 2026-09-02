@@ -24,7 +24,7 @@ const tabs = [
 const toolHints: Record<CanvasTool, string> = {
     select: 'Arraste os vértices para reposicionar e o fundo para mover a visão.',
     node: 'Clique em qualquer ponto vazio do canvas para criar um vértice.',
-    edge: 'Clique no vértice de origem e depois no de destino para criar a aresta.',
+    edge: 'Clique no primeiro vértice e depois no segundo para criar a aresta.',
     erase: 'Clique em um vértice ou aresta para removê-lo do grafo.',
 };
 
@@ -205,6 +205,8 @@ export function Studio() {
                     pendingSourceId={pendingSourceId}
                     startId={activeStartId}
                     endId={activeEndId}
+                    startLabel={algorithm.id === 'ford-fulkerson' ? 'fonte' : 'raiz'}
+                    endLabel={algorithm.id === 'ford-fulkerson' ? 'sumidouro' : 'destino'}
                     autoFitKey={autoFitKey}
                     onBackgroundClick={handleBackgroundClick}
                     onNodePointerDown={handleNodePointerDown}

@@ -38,6 +38,8 @@ interface GraphCanvasProps {
     pendingSourceId: NodeId | null;
     startId: NodeId | null;
     endId: NodeId | null;
+    startLabel: string;
+    endLabel: string;
     autoFitKey: number;
     onBackgroundClick: (point: Point) => void;
     onNodePointerDown: (id: NodeId) => void;
@@ -67,6 +69,8 @@ export function GraphCanvas({
     pendingSourceId,
     startId,
     endId,
+    startLabel,
+    endLabel,
     autoFitKey,
     onBackgroundClick,
     onNodePointerDown,
@@ -513,7 +517,7 @@ export function GraphCanvas({
                                         y={-NODE_RADIUS - 13}
                                         className="fill-brand pointer-events-none text-[10px] font-semibold tracking-wide uppercase"
                                     >
-                                        origem
+                                        {startLabel}
                                     </text>
                                 ) : null}
                                 {endId === node.id ? (
@@ -522,7 +526,7 @@ export function GraphCanvas({
                                         y={-NODE_RADIUS - 13}
                                         className="fill-state-path pointer-events-none text-[10px] font-semibold tracking-wide uppercase"
                                     >
-                                        destino
+                                        {endLabel}
                                     </text>
                                 ) : null}
                             </g>

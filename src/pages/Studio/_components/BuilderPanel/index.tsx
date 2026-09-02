@@ -72,7 +72,7 @@ export function BuilderPanel({
         }
         const parsed = Number(weight.replace(',', '.'));
         if (!Number.isFinite(parsed)) {
-            setFeedback('Informe um peso numérico válido.');
+            setFeedback('Informe um custo numérico válido.');
             return;
         }
         const created = onAddEdge(source, target, parsed, directed);
@@ -197,7 +197,7 @@ export function BuilderPanel({
 
                     <div className="flex items-end gap-2">
                         <TextField
-                            label="Peso"
+                            label="Custo"
                             className="w-24 shrink-0"
                             inputMode="decimal"
                             value={weight}

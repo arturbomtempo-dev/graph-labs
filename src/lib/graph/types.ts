@@ -77,7 +77,11 @@ export interface AlgorithmContext {
 }
 
 export type AlgorithmCategory =
-    'Percursos' | 'Conectividade' | 'Árvore geradora mínima' | 'Caminhos mínimos' | 'Fluxo máximo';
+    | 'Busca em grafos'
+    | 'Conectividade'
+    | 'Árvore geradora mínima'
+    | 'Caminho mínimo'
+    | 'Fluxo máximo';
 
 export interface AlgorithmDefinition {
     id: string;

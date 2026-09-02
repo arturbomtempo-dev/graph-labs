@@ -77,8 +77,8 @@ export function Studio() {
         return orderedNodeIds.find((id) => id !== resolvedStartId) ?? null;
     }, [endId, nodeIds, algorithm.needsEnd, orderedNodeIds, resolvedStartId]);
 
-    const usesStart = algorithm.needsStart || algorithm.category === 'Caminhos mínimos';
-    const usesEnd = algorithm.needsEnd || algorithm.category === 'Caminhos mínimos';
+    const usesStart = algorithm.needsStart || algorithm.category === 'Caminho mínimo';
+    const usesEnd = algorithm.needsEnd || algorithm.category === 'Caminho mínimo';
     const activeStartId = usesStart ? resolvedStartId : null;
     const activeEndId = usesEnd ? resolvedEndId : null;
 

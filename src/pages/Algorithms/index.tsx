@@ -7,10 +7,10 @@ import { AlgorithmArticle } from './_components/AlgorithmArticle';
 
 const categories: (AlgorithmCategory | 'Todos')[] = [
     'Todos',
-    'Percursos',
+    'Busca em grafos',
     'Conectividade',
     'Árvore geradora mínima',
-    'Caminhos mínimos',
+    'Caminho mínimo',
     'Fluxo máximo',
 ];
 
@@ -28,8 +28,9 @@ export function Algorithms() {
                     Referência dos algoritmos
                 </h1>
                 <p className="text-ink-soft max-w-2xl text-sm leading-relaxed">
-                    Pseudocódigo, invariantes e armadilhas de cada procedimento implementado no
-                    estúdio. É exatamente essa formulação que a simulação executa passo a passo.
+                    Pseudocódigo, invariantes e erros comuns de cada método implementado no estúdio,
+                    na mesma notação usada em sala. É exatamente essa formulação que a simulação
+                    executa passo a passo.
                 </p>
             </header>
 

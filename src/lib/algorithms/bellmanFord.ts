@@ -25,16 +25,18 @@ interface Arc {
 
 export const bellmanFord: AlgorithmDefinition = {
     id: 'bellman-ford',
-    name: 'Bellman-Ford',
+    name: 'Método de Bellman-Ford',
     shortName: 'Bellman-Ford',
-    category: 'Caminhos mínimos',
-    tagline: 'Relaxa todas as arestas V−1 vezes e detecta ciclos de peso negativo.',
-    complexity: 'O(V · E)',
+    category: 'Caminho mínimo',
+    tagline:
+        'Programação dinâmica: examina todas as arestas a cada iteração, relaxando as que estiverem tensas, por |V(G)| − 1 iterações.',
+    complexity: 'O(n · m)',
     needsStart: true,
     needsEnd: false,
     constraints: [
-        'Aceita pesos negativos',
-        'Detecta ciclos negativos alcançáveis a partir da origem',
+        'Admite arestas de custo negativo',
+        'Não admite ciclo de custo negativo',
+        'Detecta ciclo de custo negativo alcançável a partir da origem',
     ],
     validate: (context) => [
         ...requireNodes(context),
@@ -70,14 +72,15 @@ export const bellmanFord: AlgorithmDefinition = {
         const table = (highlight?: NodeId) =>
             distanceTable(graph, distance, parent, {
                 id: 'bf-table',
-                title: 'Distâncias e predecessores',
-                distanceLabel: 'd',
+                title: 'dist e pred',
+                distanceLabel: 'dist',
+                parentLabel: 'pred',
                 highlight: highlight ? new Set([highlight]) : undefined,
             });
 
         const arcList = () => ({
             id: 'arc-order',
-            title: 'Ordem de relaxamento',
+            title: 'Lista de arestas (ordem fixa de exame)',
             variant: 'queue' as const,
             items: arcs.map(
                 (arc) =>
@@ -87,7 +90,7 @@ export const bellmanFord: AlgorithmDefinition = {
 
         builder.commit({
             title: 'Inicialização',
-            description: `d(${labelOf(graph, source)}) = 0 e todas as demais distâncias começam em ∞. Cada aresta não direcionada é tratada como dois arcos opostos.`,
+            description: `dist[${labelOf(graph, source)}] = 0 na origem, dist[v] = ∞ e pred[v] = nulo nos demais vértices. Cada aresta não direcionada é examinada nos dois sentidos.`,
             tables: [table()],
             lists: [arcList()],
         });
@@ -99,7 +102,7 @@ export const bellmanFord: AlgorithmDefinition = {
             let changed = false;
             builder.commit({
                 title: `Iteração ${round} de ${rounds}`,
-                description: `Todas as ${arcs.length} arestas serão relaxadas nesta passagem, sempre na mesma ordem.`,
+                description: `Nesta iteração todas as ${arcs.length} arestas são examinadas, sempre na mesma ordem, e as que estiverem tensas são relaxadas. Como qualquer caminho tem no máximo n − 1 arestas, ${rounds} iteração(ões) bastam.`,
                 tables: [table()],
                 lists: [arcList()],
                 metrics: [{ label: 'Iteração', value: `${round} / ${rounds}` }],
@@ -122,8 +125,8 @@ export const bellmanFord: AlgorithmDefinition = {
                     builder.setNode(arc.to, 'frontier');
                     builder.setNodeBadge(arc.to, formatWeight(candidate));
                     builder.commit({
-                        title: `Relaxa ${labels.get(arc.from)} → ${labels.get(arc.to)}`,
-                        description: `${formatWeight(fromDistance)} + ${formatWeight(arc.edge.weight)} = ${formatWeight(candidate)} melhora ${formatDistance(currentDistance)}. A distância de ${labels.get(arc.to)} é atualizada.`,
+                        title: `Aresta tensa (${labels.get(arc.from)}, ${labels.get(arc.to)}) — relaxada`,
+                        description: `dist[${labels.get(arc.to)}] = ${formatDistance(currentDistance)} > dist[${labels.get(arc.from)}] + d = ${formatWeight(fromDistance)} + ${formatWeight(arc.edge.weight)} = ${formatWeight(candidate)}. Logo dist[${labels.get(arc.to)}] ← ${formatWeight(candidate)} e pred[${labels.get(arc.to)}] ← ${labels.get(arc.from)}.`,
                         tables: [table(arc.to)],
                         lists: [arcList()],
                         metrics: [{ label: 'Iteração', value: `${round} / ${rounds}` }],
@@ -134,9 +137,9 @@ export const bellmanFord: AlgorithmDefinition = {
             builder.resetEdgesWithState('active', 'idle');
             if (!changed) {
                 builder.commit({
-                    title: `Iteração ${round} sem alterações`,
+                    title: `Iteração ${round} sem arestas tensas`,
                     description:
-                        'Nenhuma distância mudou nesta passagem, portanto as distâncias já convergiram e as iterações restantes seriam redundantes.',
+                        'Nenhuma aresta estava tensa nesta iteração, portanto não haverá atualizações nas próximas e o algoritmo pode terminar.',
                     tables: [table()],
                 });
                 break;
@@ -150,9 +153,9 @@ export const bellmanFord: AlgorithmDefinition = {
         });
 
         builder.commit({
-            title: 'Verificação de ciclo negativo',
+            title: 'Verificação de ciclo de custo negativo',
             description:
-                'Uma passagem adicional é executada: se alguma aresta ainda puder ser relaxada, existe um ciclo de peso negativo alcançável a partir da origem.',
+                'Uma iteração adicional é executada: se alguma aresta ainda estiver tensa, algum caminho teria n arestas ou mais, o que só é possível na presença de ciclo de custo negativo alcançável a partir da origem.',
             tables: [table()],
         });
 
@@ -166,8 +169,8 @@ export const bellmanFord: AlgorithmDefinition = {
                 builder.setEdge(arc.edge.id, 'reject');
                 builder.setNode(arc.to, 'reject');
                 builder.commit({
-                    title: `Ciclo negativo detectado em ${labels.get(arc.from)} → ${labels.get(arc.to)}`,
-                    description: `A aresta ainda admite relaxamento (${formatWeight(fromDistance)} + ${formatWeight(arc.edge.weight)} < ${formatDistance(distance.get(arc.to) ?? Infinity)}), o que só é possível se houver um ciclo de peso negativo alcançável.`,
+                    title: `Ciclo de custo negativo detectado em (${labels.get(arc.from)}, ${labels.get(arc.to)})`,
+                    description: `A aresta continua tensa (${formatWeight(fromDistance)} + ${formatWeight(arc.edge.weight)} < ${formatDistance(distance.get(arc.to) ?? Infinity)}), o que só é possível se houver ciclo de custo negativo alcançável a partir da origem.`,
                     tables: [table(arc.to)],
                 });
             }
@@ -177,16 +180,16 @@ export const bellmanFord: AlgorithmDefinition = {
 
         if (negativeArcs.length > 0) {
             conclusions.push(
-                'Existe ciclo de peso negativo alcançável a partir da origem: não há caminho mínimo bem definido para os vértices afetados.'
+                'Existe ciclo de custo negativo alcançável a partir da origem: para os vértices afetados não há caminho mínimo, pois é sempre possível reduzir o custo dando mais uma volta no ciclo.'
             );
             builder.commit({
-                title: 'Resultado inválido por ciclo negativo',
-                description: `${negativeArcs.length} aresta(s) ainda admitem relaxamento após ${rounds} iterações.`,
+                title: 'Resultado inválido por ciclo de custo negativo',
+                description: `${negativeArcs.length} aresta(s) continuam tensas após ${rounds} iteração(ões).`,
                 tables: [table()],
             });
         } else {
             conclusions.push(
-                `Distâncias finais a partir de ${labelOf(graph, source)}: ${sortedNodes(graph)
+                `dist[ ] final a partir de ${labelOf(graph, source)}: ${sortedNodes(graph)
                     .map(
                         (node) =>
                             `${node.label} = ${formatDistance(distance.get(node.id) ?? Number.POSITIVE_INFINITY)}`
@@ -194,7 +197,7 @@ export const bellmanFord: AlgorithmDefinition = {
                     .join(', ')}.`
             );
             conclusions.push(
-                `As distâncias convergiram na iteração ${lastRoundWithChange || 1} de ${rounds}.`
+                `A última iteração com aresta tensa foi a de número ${lastRoundWithChange || 1}, de um total de ${rounds}. Sem ciclo de custo negativo, todo caminho mínimo é simples (não repete vértices).`
             );
 
             if (endId && Number.isFinite(distance.get(endId) ?? Infinity)) {
@@ -205,7 +208,7 @@ export const bellmanFord: AlgorithmDefinition = {
                     );
                     path.forEach((nodeId) => builder.setNode(nodeId, 'path'));
                     conclusions.push(
-                        `Caminho mínimo até ${labelOf(graph, endId)}: ${path.map((id) => labels.get(id)).join(' → ')}.`
+                        `Caminho mínimo até ${labelOf(graph, endId)}, obtido por pred[ ]: ${path.map((id) => labels.get(id)).join(' → ')}.`
                     );
                 }
             }
@@ -213,7 +216,7 @@ export const bellmanFord: AlgorithmDefinition = {
             builder.commit({
                 title: 'Caminhos mínimos calculados',
                 description:
-                    'Nenhuma aresta admite relaxamento adicional, portanto as distâncias são ótimas.',
+                    'Nenhuma aresta está tensa, portanto o valor ótimo foi atingido e não há ciclo de custo negativo alcançável.',
                 tables: [table()],
             });
         }

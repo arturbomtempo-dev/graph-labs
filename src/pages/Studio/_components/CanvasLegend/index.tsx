@@ -1,10 +1,10 @@
 import { cn } from '@/lib/utils/cn';
 
 const items = [
-    { label: 'Não visitado', dot: 'bg-line-strong' },
-    { label: 'Descoberto', dot: 'bg-state-frontier' },
+    { label: 'Não explorado', dot: 'bg-line-strong' },
+    { label: 'Marcado', dot: 'bg-state-frontier' },
     { label: 'Em análise', dot: 'bg-state-active' },
-    { label: 'Finalizado', dot: 'bg-state-done' },
+    { label: 'Explorado / na solução', dot: 'bg-state-done' },
     { label: 'Descartado', dot: 'bg-state-reject' },
     { label: 'Caminho', dot: 'bg-state-path' },
 ];

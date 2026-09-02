@@ -10,14 +10,16 @@ export const depthFirstSearch: AlgorithmDefinition = {
     id: 'dfs',
     name: 'Busca em Profundidade',
     shortName: 'DFS',
-    category: 'Percursos',
-    tagline: 'Aprofunda ao máximo antes de retroceder, marcando tempos de descoberta e término.',
-    complexity: 'O(V + E)',
+    category: 'Busca em grafos',
+    tagline:
+        'Escolhe sempre o vértice marcado mais recentemente alcançado, registrando tempo de descoberta TD e tempo de término TT.',
+    complexity: 'O(n + m)',
     needsStart: true,
     needsEnd: false,
     constraints: [
         'Aceita arestas direcionadas e não direcionadas',
-        'Classifica as arestas em árvore, retorno, avanço e cruzamento',
+        'Em grafo não direcionado: arestas de árvore e de retorno',
+        'Em grafo direcionado: árvore, retorno, avanço e cruzamento',
     ],
     validate: (context) => [...requireNodes(context), ...requireStart(context)],
     run: ({ graph, startId }) => {
@@ -26,6 +28,7 @@ export const depthFirstSearch: AlgorithmDefinition = {
         const labels = nodeLabelMap(graph);
 
         const color = new Map<NodeId, Color>();
+        // TD[v] e TT[v]: tempos de descoberta e de término marcados pelo contador global t.
         const discovery = new Map<NodeId, number>();
         const finish = new Map<NodeId, number>();
         const parent = new Map<NodeId, NodeId | null>();
@@ -50,19 +53,19 @@ export const depthFirstSearch: AlgorithmDefinition = {
                           : undefined,
                 cells: {
                     vertex: node.label,
-                    discovery: String(discovery.get(node.id) ?? '—'),
-                    finish: String(finish.get(node.id) ?? '—'),
+                    discovery: String(discovery.get(node.id) ?? 0),
+                    finish: String(finish.get(node.id) ?? 0),
                     parent: labels.get(parent.get(node.id) ?? '') ?? '—',
                 },
             }));
             return {
                 id: 'dfs-times',
-                title: 'Tempos de descoberta e término',
+                title: 'Tempos de descoberta e de término',
                 columns: [
                     { key: 'vertex', label: 'Vértice' },
-                    { key: 'discovery', label: 'd' },
-                    { key: 'finish', label: 'f' },
-                    { key: 'parent', label: 'Predecessor' },
+                    { key: 'discovery', label: 'TD' },
+                    { key: 'finish', label: 'TT' },
+                    { key: 'parent', label: 'pai' },
                 ],
                 rows,
             };
@@ -103,7 +106,7 @@ export const depthFirstSearch: AlgorithmDefinition = {
         builder.commit({
             title: 'Inicialização',
             description:
-                'Todos os vértices são brancos, sem predecessor e sem tempos definidos. O relógio começa em 0.',
+                'Todos os vértices começam desmarcados (brancos): TD[v] = 0, TT[v] = 0 e pai[v] = nulo. O contador global t começa em 0.',
             ...snapshot(),
         });
 
@@ -118,7 +121,7 @@ export const depthFirstSearch: AlgorithmDefinition = {
 
             builder.commit({
                 title: `Descobre ${labelOf(graph, current)}`,
-                description: `${labelOf(graph, current)} fica cinza com d = ${time} e entra na pilha de recursão.`,
+                description: `${labelOf(graph, current)} passa a marcado (cinza) com TD = ${time} e entra na pilha de recursão.`,
                 ...snapshot(current),
             });
 
@@ -133,8 +136,8 @@ export const depthFirstSearch: AlgorithmDefinition = {
                     classification.set(entry.edge.id, 'Árvore');
                     builder.setEdge(entry.edge.id, 'done');
                     builder.commit({
-                        title: `Aresta de árvore ${labelOf(graph, current)} → ${labelOf(graph, entry.to)}`,
-                        description: `${labelOf(graph, entry.to)} é branco, então a busca aprofunda por essa aresta.`,
+                        title: `Aresta de árvore ${labelOf(graph, current)} ${entry.edge.directed ? '→' : '—'} ${labelOf(graph, entry.to)}`,
+                        description: `TD[${labelOf(graph, entry.to)}] = 0, ou seja, ${labelOf(graph, entry.to)} é visitado pela 1ª vez: pai[${labelOf(graph, entry.to)}] = ${labelOf(graph, current)} e a busca aprofunda por essa aresta.`,
                         ...snapshot(entry.to),
                     });
                     visit(entry.to, entry.edge.id);
@@ -148,17 +151,32 @@ export const depthFirstSearch: AlgorithmDefinition = {
                 }
 
                 if (!classification.has(entry.edge.id)) {
-                    const kind: EdgeKind =
-                        neighbourColor === 'gray'
-                            ? 'Retorno'
-                            : (discovery.get(current) ?? 0) < (discovery.get(entry.to) ?? 0)
-                              ? 'Avanço'
-                              : 'Cruzamento';
+                    // Em grafo não direcionado só existem arestas de árvore e de retorno: a aresta
+                    // para um vértice já explorado (preto) já foi classificada pela outra extremidade.
+                    if (!entry.edge.directed && neighbourColor === 'black') continue;
+
+                    const kind: EdgeKind = !entry.edge.directed
+                        ? 'Retorno'
+                        : neighbourColor === 'gray'
+                          ? 'Retorno'
+                          : (discovery.get(current) ?? 0) < (discovery.get(entry.to) ?? 0)
+                            ? 'Avanço'
+                            : 'Cruzamento';
                     classification.set(entry.edge.id, kind);
                     builder.setEdge(entry.edge.id, kind === 'Retorno' ? 'reject' : 'frontier');
+
+                    const arrow = entry.edge.directed ? '→' : '—';
+                    const reason = entry.edge.directed
+                        ? kind === 'Retorno'
+                            ? `TT[${labelOf(graph, entry.to)}] = 0, logo ${labelOf(graph, entry.to)} é ancestral de ${labelOf(graph, current)}`
+                            : kind === 'Avanço'
+                              ? `TD[${labelOf(graph, current)}] < TD[${labelOf(graph, entry.to)}], logo ${labelOf(graph, entry.to)} é descendente de ${labelOf(graph, current)} sem ser seu filho`
+                              : `${labelOf(graph, entry.to)} não é descendente nem ancestral de ${labelOf(graph, current)}`
+                        : `TT[${labelOf(graph, entry.to)}] = 0 e ${labelOf(graph, entry.to)} ≠ pai[${labelOf(graph, current)}], logo ${labelOf(graph, entry.to)} é ancestral de ${labelOf(graph, current)} sem ser seu pai`;
+
                     builder.commit({
                         title: `Aresta de ${kind.toLowerCase()}`,
-                        description: `${labelOf(graph, entry.to)} está ${neighbourColor === 'gray' ? 'cinza (ainda na pilha)' : 'preto (já finalizado)'}, portanto a aresta ${labelOf(graph, current)} → ${labelOf(graph, entry.to)} é classificada como aresta de ${kind.toLowerCase()}.`,
+                        description: `${reason}. Portanto ${labelOf(graph, current)} ${arrow} ${labelOf(graph, entry.to)} é classificada como aresta de ${kind.toLowerCase()}.`,
                         ...snapshot(entry.to),
                     });
                 }
@@ -172,8 +190,8 @@ export const depthFirstSearch: AlgorithmDefinition = {
             builder.setNodeBadge(current, `${discovery.get(current)}/${time}`);
 
             builder.commit({
-                title: `Finaliza ${labelOf(graph, current)}`,
-                description: `Todos os vizinhos foram examinados: ${labelOf(graph, current)} fica preto com f = ${time}.`,
+                title: `${labelOf(graph, current)} explorado`,
+                description: `Toda a vizinhança de ${labelOf(graph, current)} foi examinada: o vértice passa a explorado (preto) com TT = ${time}. Seu intervalo de vida é I(${labelOf(graph, current)}) = [${discovery.get(current)}, ${time}].`,
                 ...snapshot(),
             });
         };
@@ -184,7 +202,7 @@ export const depthFirstSearch: AlgorithmDefinition = {
         remaining.forEach((node) => {
             builder.commit({
                 title: `Nova raiz: ${node.label}`,
-                description: `${node.label} continua branco após a busca anterior, então uma nova árvore da floresta de profundidade é iniciada nele.`,
+                description: `TD[${node.label}] = 0 após a busca anterior, então ${node.label} vira raiz de uma nova árvore de profundidade.`,
                 ...snapshot(node.id),
             });
             visit(node.id, null);
@@ -195,7 +213,7 @@ export const depthFirstSearch: AlgorithmDefinition = {
 
         builder.commit({
             title: 'Busca concluída',
-            description: `A floresta de profundidade está completa com ${treeEdges.length} aresta(s) de árvore.`,
+            description: `Todos os vértices estão explorados. As ${treeEdges.length} aresta(s) de árvore formam a floresta de profundidade.`,
             ...snapshot(),
         });
 
@@ -203,8 +221,9 @@ export const depthFirstSearch: AlgorithmDefinition = {
             `Ordem de visita: ${visitOrder.join(' → ')}.`,
             `Arestas de árvore: ${treeEdges.length}. Arestas de retorno: ${backEdges.length}.`,
             backEdges.length > 0
-                ? 'A presença de arestas de retorno indica que o grafo possui ciclo.'
+                ? 'As arestas de retorno sempre representam um ciclo no grafo original.'
                 : 'Não há arestas de retorno, logo o grafo é acíclico.',
+            'Os intervalos de vida I(v) = [TD[v], TT[v]] são encaixados: w é descendente de v se e somente se I(w) está contido em I(v).',
         ]);
     },
 };

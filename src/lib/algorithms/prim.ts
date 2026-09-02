@@ -12,14 +12,19 @@ import { labelOf, requireEdges, requireNodes, requireStart } from './shared';
 
 export const prim: AlgorithmDefinition = {
     id: 'prim',
-    name: 'Prim',
+    name: 'Método de Prim',
     shortName: 'Prim',
     category: 'Árvore geradora mínima',
-    tagline: 'Cresce uma única árvore escolhendo sempre a aresta mais leve que sai dela.',
-    complexity: 'O(E log V)',
+    tagline:
+        'Inclui vértices um a um: a cada passo acrescenta a aresta de menor custo entre V(T) e os vértices ainda não selecionados.',
+    complexity: 'O(m log n)',
     needsStart: true,
     needsEnd: false,
-    constraints: ['Exige grafo não direcionado', 'Usa os pesos das arestas'],
+    constraints: [
+        'Exige grafo não direcionado',
+        'Exige grafo ponderado com custo c_e > 0',
+        'Só existe árvore geradora se o grafo for conexo',
+    ],
     validate: (context) => {
         const errors = [
             ...requireNodes(context),
@@ -38,6 +43,7 @@ export const prim: AlgorithmDefinition = {
         const adjacency = buildAdjacency(graph);
         const labels = nodeLabelMap(graph);
 
+        // Menor custo conhecido de uma aresta que liga o vértice ao conjunto V(T).
         const key = new Map<NodeId, number>();
         const parent = new Map<NodeId, NodeId | null>();
         const parentEdge = new Map<NodeId, string | null>();
@@ -55,11 +61,11 @@ export const prim: AlgorithmDefinition = {
 
         const keyTable = (highlight?: NodeId): TraceTable => ({
             id: 'prim-keys',
-            title: 'Chaves e predecessores',
+            title: 'Menor custo até V(T)',
             columns: [
-                { key: 'vertex', label: 'Vértice' },
-                { key: 'keyValue', label: 'chave' },
-                { key: 'parent', label: 'Predecessor' },
+                { key: 'vertex', label: 'Vértice w' },
+                { key: 'keyValue', label: 'menor custo' },
+                { key: 'parent', label: 'v ∈ V(T)' },
                 { key: 'status', label: 'Situação' },
             ],
             rows: sortedNodes(graph).map((node) => ({
@@ -70,22 +76,22 @@ export const prim: AlgorithmDefinition = {
                     vertex: node.label,
                     keyValue: formatDistance(key.get(node.id) ?? Number.POSITIVE_INFINITY),
                     parent: labels.get(parent.get(node.id) ?? '') ?? '—',
-                    status: inTree.has(node.id) ? 'na árvore' : 'na fila',
+                    status: inTree.has(node.id) ? 'em V(T)' : 'fora de V(T)',
                 },
             })),
         });
 
         const metrics = () => [
             {
-                label: 'Arestas na árvore',
+                label: 'Arestas em E(T)',
                 value: `${treeEdges.length} / ${graph.nodes.length - 1}`,
             },
-            { label: 'Peso total', value: formatWeight(totalWeight) },
+            { label: 'Custo total C(T)', value: formatWeight(totalWeight) },
         ];
 
         builder.commit({
             title: 'Inicialização',
-            description: `Todas as chaves começam em ∞, exceto a raiz ${labelOf(graph, startId)}, que recebe chave 0. Nenhum vértice está na árvore.`,
+            description: `Escolhida a raiz ${labelOf(graph, startId)}: V(T) = { ${labelOf(graph, startId)} } e E(T) = ∅. Nenhum outro vértice tem ainda uma aresta conhecida até V(T), por isso o menor custo é ∞.`,
             tables: [keyTable()],
             metrics: metrics(),
         });
@@ -106,7 +112,7 @@ export const prim: AlgorithmDefinition = {
                 builder.commit({
                     title: 'Grafo desconexo',
                     description:
-                        'Não há mais vértices alcançáveis com chave finita: o grafo é desconexo e a árvore geradora cobre apenas a componente da raiz.',
+                        'Não existe aresta entre V(T) e os vértices restantes: o grafo é desconexo. Como um grafo só possui árvore geradora se for conexo, o resultado cobre apenas o componente conexo da raiz.',
                     tables: [keyTable()],
                     metrics: metrics(),
                 });
@@ -126,10 +132,10 @@ export const prim: AlgorithmDefinition = {
             }
 
             builder.commit({
-                title: `Extrai ${labels.get(current)} (chave ${formatWeight(bestKey)})`,
+                title: `Acrescenta ${labels.get(current)} a V(T)`,
                 description: linkingEdge
-                    ? `${labels.get(current)} é o vértice fora da árvore com menor chave. A aresta ${labelOf(graph, parent.get(current))} — ${labels.get(current)} de peso ${formatWeight(bestKey)} entra na árvore geradora mínima.`
-                    : `${labels.get(current)} é a raiz e entra na árvore sem aresta associada.`,
+                    ? `A aresta de menor custo com uma extremidade em V(T) e a outra fora é {${labelOf(graph, parent.get(current))}, ${labels.get(current)}}, de custo ${formatWeight(bestKey)}. Ela é acrescentada a E(T) e ${labels.get(current)} passa a pertencer a V(T).`
+                    : `${labels.get(current)} é a raiz r e inicia V(T), ainda sem nenhuma aresta em E(T).`,
                 tables: [keyTable(current)],
                 metrics: metrics(),
             });
@@ -147,15 +153,15 @@ export const prim: AlgorithmDefinition = {
                     builder.setNodeBadge(entry.to, formatWeight(weight));
                     builder.setEdge(entry.edge.id, 'active');
                     builder.commit({
-                        title: `Atualiza chave de ${labels.get(entry.to)}`,
-                        description: `A aresta ${labels.get(current)} — ${labels.get(entry.to)} tem peso ${formatWeight(weight)}, menor que a chave anterior (${formatDistance(currentKey)}). A chave e o predecessor são atualizados.`,
+                        title: `Nova aresta candidata para ${labels.get(entry.to)}`,
+                        description: `A aresta {${labels.get(current)}, ${labels.get(entry.to)}} tem custo ${formatWeight(weight)}, menor que o menor custo conhecido até aqui (${formatDistance(currentKey)}). Ela passa a ser a candidata a ligar ${labels.get(entry.to)} a V(T).`,
                         tables: [keyTable(entry.to)],
                         metrics: metrics(),
                     });
                 } else {
                     builder.commit({
-                        title: `Mantém chave de ${labels.get(entry.to)}`,
-                        description: `A aresta ${labels.get(current)} — ${labels.get(entry.to)} tem peso ${formatWeight(weight)}, que não melhora a chave atual (${formatDistance(currentKey)}).`,
+                        title: `Mantém a candidata de ${labels.get(entry.to)}`,
+                        description: `A aresta {${labels.get(current)}, ${labels.get(entry.to)}} tem custo ${formatWeight(weight)}, que não é menor que o menor custo já conhecido (${formatDistance(currentKey)}).`,
                         tables: [keyTable(entry.to)],
                         metrics: metrics(),
                     });
@@ -170,18 +176,18 @@ export const prim: AlgorithmDefinition = {
         });
 
         builder.commit({
-            title: 'Árvore geradora mínima concluída',
-            description: `A árvore possui ${treeEdges.length} aresta(s) e peso total ${formatWeight(totalWeight)}.`,
+            title: 'AGM concluída',
+            description: `V(T) = V(G) e a árvore possui ${treeEdges.length} aresta(s), com custo total C(T) = ${formatWeight(totalWeight)}.`,
             tables: [keyTable()],
             metrics: metrics(),
         });
 
         return builder.build([
-            `Peso total da árvore geradora mínima: ${formatWeight(totalWeight)}.`,
-            `Arestas selecionadas: ${treeEdges.length} (uma árvore geradora de ${inTree.size} vértices exige ${Math.max(inTree.size - 1, 0)}).`,
+            `Custo total da árvore geradora de custo mínimo: C(T) = ${formatWeight(totalWeight)}.`,
+            `|E(T)| = ${treeEdges.length} — uma árvore geradora de ${inTree.size} vértices tem exatamente |V| − 1 = ${Math.max(inTree.size - 1, 0)} aresta(s).`,
             inTree.size < graph.nodes.length
-                ? 'O grafo é desconexo, portanto o resultado é uma árvore geradora da componente que contém a raiz.'
-                : 'Todos os vértices foram conectados.',
+                ? 'O grafo é desconexo, portanto o resultado é a AGM apenas do componente conexo que contém a raiz.'
+                : 'Todos os vértices foram selecionados: T é uma árvore geradora de G.',
         ]);
     },
 };

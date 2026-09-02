@@ -1,147 +1,250 @@
-import { buildAdjacency, nodeLabelMap } from '../graph/helpers';
+import { buildAdjacency, nodeLabelMap, sortedNodes } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
-import type { AlgorithmDefinition, NodeId } from '../graph/types';
-import { distanceTable, labelOf, requireNodes, requireStart } from './shared';
+import type { AlgorithmDefinition, NodeId, TraceRow, TraceTable } from '../graph/types';
+import { labelOf, requireNodes, requireStart } from './shared';
+
+type EdgeKind = 'Árvore (pai)' | 'Tio' | 'Irmão' | 'Primo';
 
 export const breadthFirstSearch: AlgorithmDefinition = {
     id: 'bfs',
     name: 'Busca em Largura',
     shortName: 'BFS',
-    category: 'Percursos',
-    tagline: 'Explora o grafo em camadas usando uma fila FIFO.',
-    complexity: 'O(V + E)',
+    category: 'Busca em grafos',
+    tagline:
+        'Escolhe sempre o vértice marcado menos recentemente alcançado, usando uma fila, e define o nível de cada vértice.',
+    complexity: 'O(n + m)',
     needsStart: true,
     needsEnd: false,
-    constraints: ['Aceita arestas direcionadas e não direcionadas', 'Ignora os pesos das arestas'],
+    constraints: [
+        'Aceita arestas direcionadas e não direcionadas',
+        'Ignora os custos das arestas',
+        'Classifica as arestas em pai, tio, irmão e primo',
+    ],
     validate: (context) => [...requireNodes(context), ...requireStart(context)],
     run: ({ graph, startId }) => {
         const builder = createTraceBuilder(graph);
         const adjacency = buildAdjacency(graph);
         const labels = nodeLabelMap(graph);
-        const source = startId as NodeId;
+        const root = startId as NodeId;
 
-        const distance = new Map<NodeId, number>();
+        // L[v]: índice de descoberta (0 = ainda não marcado); nível[v]: distância à raiz.
+        const index = new Map<NodeId, number>();
+        const level = new Map<NodeId, number>();
         const parent = new Map<NodeId, NodeId | null>();
+        const classification = new Map<string, EdgeKind>();
         graph.nodes.forEach((node) => {
-            distance.set(node.id, Number.POSITIVE_INFINITY);
+            index.set(node.id, 0);
+            level.set(node.id, 0);
             parent.set(node.id, null);
         });
 
         const queue: NodeId[] = [];
         const visitOrder: string[] = [];
+        let time = 0;
 
-        const snapshot = (highlight?: NodeId) =>
-            distanceTable(graph, distance, parent, {
-                id: 'bfs-table',
-                title: 'Distância e predecessor',
-                distanceLabel: 'd (arestas)',
-                highlight: highlight ? new Set([highlight]) : undefined,
-            });
+        const marked = (id: NodeId) => (index.get(id) ?? 0) > 0;
+
+        const attributesTable = (highlight?: NodeId): TraceTable => {
+            const rows: TraceRow[] = sortedNodes(graph).map((node) => ({
+                key: node.id,
+                emphasis:
+                    node.id === highlight
+                        ? 'active'
+                        : builder.nodeState(node.id) === 'done'
+                          ? 'done'
+                          : undefined,
+                cells: {
+                    vertex: node.label,
+                    index: marked(node.id) ? String(index.get(node.id)) : '0',
+                    level: marked(node.id) ? String(level.get(node.id)) : '—',
+                    parent: labels.get(parent.get(node.id) ?? '') ?? '—',
+                },
+            }));
+            return {
+                id: 'bfs-attributes',
+                title: 'Índice, nível e pai',
+                columns: [
+                    { key: 'vertex', label: 'Vértice' },
+                    { key: 'index', label: 'L' },
+                    { key: 'level', label: 'nível' },
+                    { key: 'parent', label: 'pai' },
+                ],
+                rows,
+            };
+        };
+
+        const edgesTable = (): TraceTable => ({
+            id: 'bfs-edges',
+            title: 'Classificação das arestas',
+            columns: [
+                { key: 'edge', label: 'Aresta' },
+                { key: 'kind', label: 'Tipo' },
+            ],
+            rows: graph.edges
+                .filter((edge) => classification.has(edge.id))
+                .map((edge) => ({
+                    key: edge.id,
+                    emphasis: classification.get(edge.id) === 'Árvore (pai)' ? 'done' : undefined,
+                    cells: {
+                        edge: `${labels.get(edge.source)} ${edge.directed ? '→' : '—'} ${labels.get(edge.target)}`,
+                        kind: classification.get(edge.id) ?? '',
+                    },
+                })),
+        });
 
         const queueList = () => ({
             id: 'queue',
-            title: 'Fila (FIFO)',
+            title: 'Fila',
             variant: 'queue' as const,
             items: queue.map((id) => labels.get(id) ?? ''),
         });
 
+        const snapshot = (highlight?: NodeId) => ({
+            tables: [attributesTable(highlight), edgesTable()],
+            lists: [queueList()],
+        });
+
         builder.commit({
             title: 'Inicialização',
-            description: `Todos os vértices começam com distância ∞ e sem predecessor. A origem ${labelOf(graph, source)} recebe distância 0.`,
-            tables: [snapshot()],
-            lists: [queueList()],
+            description:
+                'Todos os vértices começam não marcados: L[v] = 0, nível[v] = 0 e pai[v] = nulo. O contador global t começa em 0.',
+            ...snapshot(),
         });
 
-        distance.set(source, 0);
-        builder.setNode(source, 'frontier');
-        builder.setNodeBadge(source, '0');
-        queue.push(source);
-
-        builder.commit({
-            title: `Enfileira ${labelOf(graph, source)}`,
-            description: `A origem é descoberta (cinza) e entra na fila com d = 0.`,
-            tables: [snapshot(source)],
-            lists: [queueList()],
-        });
-
-        while (queue.length > 0) {
-            const current = queue.shift() as NodeId;
-            builder.resetEdgesWithState('active', 'idle');
-            builder.resetEdgesWithState('reject', 'idle');
-            builder.setNode(current, 'active');
-            visitOrder.push(labels.get(current) ?? '');
+        const startSearch = (source: NodeId, isRoot: boolean) => {
+            time += 1;
+            index.set(source, time);
+            level.set(source, 0);
+            queue.push(source);
+            builder.setNode(source, 'frontier');
+            builder.setNodeBadge(source, 'nível 0');
 
             builder.commit({
-                title: `Desenfileira ${labelOf(graph, current)}`,
-                description: `${labelOf(graph, current)} sai da fila e passa a ser o vértice em análise. Seus vizinhos serão examinados em ordem alfabética.`,
-                tables: [snapshot(current)],
-                lists: [queueList()],
-                metrics: [{ label: 'Ordem de visita', value: visitOrder.join(' → ') }],
+                title: isRoot
+                    ? `Raiz da busca: ${labelOf(graph, source)}`
+                    : `Nova raiz: ${labelOf(graph, source)}`,
+                description: isRoot
+                    ? `${labelOf(graph, source)} é a raiz da busca: recebe L = ${time}, nível 0 e entra na fila.`
+                    : `${labelOf(graph, source)} continua com L = 0 após a busca anterior, então inicia uma nova árvore de largura com nível 0.`,
+                ...snapshot(source),
             });
 
-            const neighbours = adjacency.get(current) ?? [];
-            for (const entry of neighbours) {
-                const isNew = !Number.isFinite(distance.get(entry.to) ?? Infinity);
+            while (queue.length > 0) {
+                const current = queue.shift() as NodeId;
+                builder.resetEdgesWithState('active', 'idle');
+                builder.setNode(current, 'active');
+                visitOrder.push(labels.get(current) ?? '');
 
-                if (isNew) {
-                    distance.set(entry.to, (distance.get(current) ?? 0) + 1);
-                    parent.set(entry.to, current);
-                    queue.push(entry.to);
-                    builder.setNode(entry.to, 'frontier');
-                    builder.setNodeBadge(entry.to, String(distance.get(entry.to)));
-                    builder.setEdge(entry.edge.id, 'done');
+                builder.commit({
+                    title: `Remove ${labelOf(graph, current)} da fila`,
+                    description: `${labelOf(graph, current)} sai da fila (nível ${level.get(current)}) e sua vizinhança Γ(${labelOf(graph, current)}) passa a ser examinada em ordem alfabética.`,
+                    ...snapshot(current),
+                    metrics: [{ label: 'Ordem de visita', value: visitOrder.join(' → ') }],
+                });
 
-                    builder.commit({
-                        title: `Descobre ${labelOf(graph, entry.to)}`,
-                        description: `${labelOf(graph, entry.to)} ainda não havia sido descoberto: d = ${distance.get(entry.to)}, predecessor = ${labelOf(graph, current)}. A aresta entra na árvore de busca e o vértice é enfileirado.`,
-                        tables: [snapshot(entry.to)],
-                        lists: [queueList()],
-                    });
-                } else {
-                    if (builder.edgeState(entry.edge.id) === 'idle') {
-                        builder.setEdge(entry.edge.id, 'reject');
+                for (const entry of adjacency.get(current) ?? []) {
+                    const neighbour = entry.to;
+
+                    if (!marked(neighbour)) {
+                        parent.set(neighbour, current);
+                        level.set(neighbour, (level.get(current) ?? 0) + 1);
+                        time += 1;
+                        index.set(neighbour, time);
+                        queue.push(neighbour);
+                        classification.set(entry.edge.id, 'Árvore (pai)');
+                        builder.setNode(neighbour, 'frontier');
+                        builder.setNodeBadge(neighbour, `nível ${level.get(neighbour)}`);
+                        builder.setEdge(entry.edge.id, 'done');
+
+                        builder.commit({
+                            title: `Aresta de árvore (pai) ${labelOf(graph, current)} — ${labelOf(graph, neighbour)}`,
+                            description: `${labelOf(graph, neighbour)} tinha L = 0, portanto é visitado pela 1ª vez: pai[${labelOf(graph, neighbour)}] = ${labelOf(graph, current)}, nível = nível[${labelOf(graph, current)}] + 1 = ${level.get(neighbour)} e L = ${time}. O vértice entra na fila.`,
+                            ...snapshot(neighbour),
+                        });
+                        continue;
                     }
+
+                    if (classification.has(entry.edge.id)) continue;
+
+                    const currentLevel = level.get(current) ?? 0;
+                    const neighbourLevel = level.get(neighbour) ?? 0;
+                    const sameParent = parent.get(current) === parent.get(neighbour);
+                    const laterIndex = (index.get(neighbour) ?? 0) > (index.get(current) ?? 0);
+
+                    let kind: EdgeKind | null = null;
+                    if (neighbourLevel === currentLevel + 1) {
+                        kind = 'Tio';
+                    } else if (neighbourLevel === currentLevel && laterIndex) {
+                        kind = sameParent ? 'Irmão' : 'Primo';
+                    }
+
+                    if (!kind) continue;
+
+                    classification.set(entry.edge.id, kind);
+                    builder.setEdge(entry.edge.id, kind === 'Tio' ? 'frontier' : 'reject');
+
+                    const reason =
+                        kind === 'Tio'
+                            ? `nível[${labelOf(graph, neighbour)}] = nível[${labelOf(graph, current)}] + 1, mas pai[${labelOf(graph, neighbour)}] ≠ ${labelOf(graph, current)}`
+                            : `nível[${labelOf(graph, neighbour)}] = nível[${labelOf(graph, current)}] e pai[${labelOf(graph, current)}] ${sameParent ? '=' : '≠'} pai[${labelOf(graph, neighbour)}]`;
+
                     builder.commit({
-                        title: `Ignora ${labelOf(graph, entry.to)}`,
-                        description: `${labelOf(graph, entry.to)} já foi descoberto (d = ${distance.get(entry.to)}), então a aresta não pertence à árvore de busca.`,
-                        tables: [snapshot(entry.to)],
-                        lists: [queueList()],
+                        title: `Aresta de ${kind.toLowerCase()}`,
+                        description: `${labelOf(graph, neighbour)} já estava marcado, e ${reason}. Logo {${labelOf(graph, current)}, ${labelOf(graph, neighbour)}} é aresta de ${kind.toLowerCase()} e não pertence à árvore de largura.`,
+                        ...snapshot(neighbour),
                     });
                 }
-            }
 
-            builder.setNode(current, 'done');
-            builder.commit({
-                title: `Fecha ${labelOf(graph, current)}`,
-                description: `Todos os vizinhos de ${labelOf(graph, current)} foram examinados. O vértice é finalizado (preto).`,
-                tables: [snapshot()],
-                lists: [queueList()],
-            });
-        }
+                builder.setNode(current, 'done');
+                builder.commit({
+                    title: `${labelOf(graph, current)} explorado`,
+                    description: `Todas as arestas incidentes a ${labelOf(graph, current)} foram exploradas, portanto o vértice está explorado.`,
+                    ...snapshot(),
+                });
+            }
+        };
+
+        startSearch(root, true);
+
+        sortedNodes(graph)
+            .filter((node) => !marked(node.id))
+            .forEach((node) => startSearch(node.id, false));
 
         builder.resetEdgesWithState('active', 'idle');
-        builder.resetEdgesWithState('reject', 'idle');
+
+        const treeEdges = graph.edges.filter(
+            (edge) => classification.get(edge.id) === 'Árvore (pai)'
+        );
+        const reachable = graph.nodes.filter(
+            (node) => node.id === root || parent.get(node.id) !== null
+        );
         const unreachable = graph.nodes.filter(
-            (node) => !Number.isFinite(distance.get(node.id) ?? Infinity)
+            (node) => node.id !== root && parent.get(node.id) === null
         );
 
         builder.commit({
             title: 'Busca concluída',
             description:
                 unreachable.length > 0
-                    ? `A fila está vazia. ${unreachable.length} vértice(s) não foram alcançados a partir da origem.`
-                    : 'A fila está vazia e todos os vértices foram alcançados a partir da origem.',
-            tables: [snapshot()],
+                    ? `A fila está vazia. ${unreachable.length} vértice(s) não foram alcançados a partir da raiz, então a busca produziu mais de uma árvore de largura.`
+                    : 'A fila está vazia e todos os vértices foram alcançados a partir da raiz.',
+            ...snapshot(),
             metrics: [{ label: 'Ordem de visita', value: visitOrder.join(' → ') }],
         });
 
         const conclusions = [
             `Ordem de visita: ${visitOrder.join(' → ')}.`,
-            `A árvore de busca em largura fornece o caminho com menor número de arestas da origem até cada vértice alcançável.`,
+            `A árvore de largura é formada por todos os vértices e pelas arestas de árvore (ou pai), ${treeEdges.length} no total. nível[v] é a distância, em número de arestas, entre a raiz da busca e v.`,
         ];
         if (unreachable.length > 0) {
             conclusions.push(
-                `Não alcançados: ${unreachable.map((node) => node.label).join(', ')}.`
+                `Não alcançados a partir de ${labelOf(graph, root)}: ${unreachable
+                    .map((node) => node.label)
+                    .join(', ')} — cada um iniciou uma nova árvore de largura.`
+            );
+        } else if (reachable.length === graph.nodes.length) {
+            conclusions.push(
+                'Todos os vértices foram alcançados a partir da raiz: a busca produziu uma única árvore de largura.'
             );
         }
 

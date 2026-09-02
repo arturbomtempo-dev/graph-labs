@@ -21,10 +21,10 @@ interface AlgorithmPanelProps {
 }
 
 const categoryOrder: AlgorithmCategory[] = [
-    'Percursos',
+    'Busca em grafos',
     'Conectividade',
     'Árvore geradora mínima',
-    'Caminhos mínimos',
+    'Caminho mínimo',
     'Fluxo máximo',
 ];
 
@@ -41,7 +41,7 @@ export function AlgorithmPanel({
 }: AlgorithmPanelProps) {
     const nodeOptions = sortedNodes(graph).map((node) => ({ value: node.id, label: node.label }));
     const isFlow = selectedAlgorithm.id === 'ford-fulkerson';
-    const isShortestPath = selectedAlgorithm.category === 'Caminhos mínimos';
+    const isShortestPath = selectedAlgorithm.category === 'Caminho mínimo';
     const showStart = selectedAlgorithm.needsStart || isShortestPath;
     const showEnd = selectedAlgorithm.needsEnd || isShortestPath;
 
@@ -116,7 +116,7 @@ export function AlgorithmPanel({
 
                     {showStart ? (
                         <Select
-                            label={isFlow ? 'Fonte' : 'Vértice de origem'}
+                            label={isFlow ? 'Fonte s' : 'Raiz / origem'}
                             hint={
                                 selectedAlgorithm.needsStart
                                     ? undefined
@@ -131,7 +131,7 @@ export function AlgorithmPanel({
 
                     {showEnd ? (
                         <Select
-                            label={isFlow ? 'Sumidouro' : 'Vértice de destino'}
+                            label={isFlow ? 'Sumidouro t' : 'Vértice de destino'}
                             hint={
                                 selectedAlgorithm.needsEnd
                                     ? undefined

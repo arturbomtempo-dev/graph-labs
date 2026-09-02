@@ -38,7 +38,8 @@ export const presets: GraphPreset[] = [
     {
         id: 'weighted-undirected',
         name: 'Rede ponderada',
-        description: 'Grafo não direcionado com pesos, ideal para Prim, Kruskal e Dijkstra.',
+        description:
+            'Grafo não direcionado e ponderado, com custo c_e > 0 em cada aresta: base para AGM (Prim e Kruskal) e para Dijkstra.',
         suggestedAlgorithms: ['prim', 'kruskal', 'dijkstra'],
         build: () =>
             assemble(
@@ -65,8 +66,9 @@ export const presets: GraphPreset[] = [
     },
     {
         id: 'strongly-connected',
-        name: 'Dígrafo com ciclos',
-        description: 'Grafo direcionado com três componentes fortemente conexas para Kosaraju.',
+        name: 'Grafo direcionado com circuitos',
+        description:
+            'Grafo direcionado com três componentes fortemente conexos (f-conexos), para o método de Kosaraju.',
         suggestedAlgorithms: ['kosaraju', 'dfs'],
         build: () =>
             assemble(
@@ -95,7 +97,8 @@ export const presets: GraphPreset[] = [
     {
         id: 'flow-network',
         name: 'Rede de fluxo',
-        description: 'Rede direcionada com capacidades, da fonte S ao sumidouro T.',
+        description:
+            'Rede de fluxo: grafo direcionado com capacidade u(e) em cada aresta, da fonte s = S ao sumidouro t = T.',
         suggestedAlgorithms: ['ford-fulkerson'],
         build: () =>
             assemble(
@@ -121,9 +124,9 @@ export const presets: GraphPreset[] = [
     },
     {
         id: 'negative-weights',
-        name: 'Pesos negativos',
+        name: 'Custos negativos',
         description:
-            'Dígrafo com arestas de peso negativo, sem ciclos negativos, para Bellman-Ford.',
+            'Grafo direcionado com arestas de custo negativo e sem ciclo de custo negativo, para Bellman-Ford e Floyd-Warshall.',
         suggestedAlgorithms: ['bellman-ford', 'floyd-warshall'],
         build: () =>
             assemble(
@@ -148,7 +151,8 @@ export const presets: GraphPreset[] = [
     {
         id: 'unweighted',
         name: 'Grafo simples',
-        description: 'Grafo não direcionado sem pesos relevantes, bom para BFS e DFS.',
+        description:
+            'Grafo simples não direcionado, sem custos relevantes: bom para as buscas em largura e em profundidade.',
         suggestedAlgorithms: ['bfs', 'dfs'],
         build: () =>
             assemble(

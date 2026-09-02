@@ -11,14 +11,15 @@ import { requireEdges, requireNodes } from './shared';
 
 export const kosaraju: AlgorithmDefinition = {
     id: 'kosaraju',
-    name: 'Kosaraju',
+    name: 'Método de Kosaraju',
     shortName: 'Kosaraju',
     category: 'Conectividade',
-    tagline: 'Encontra as componentes fortemente conexas com duas buscas em profundidade.',
-    complexity: 'O(V + E)',
+    tagline:
+        'Encontra os componentes fortemente conexos (f-conexos) com duas buscas em profundidade: uma em G e outra no grafo reverso Gᴿ.',
+    complexity: 'O(n + m)',
     needsStart: false,
     needsEnd: false,
-    constraints: ['Exige grafo direcionado', 'Ignora os pesos das arestas'],
+    constraints: ['Exige grafo direcionado', 'Ignora os custos das arestas'],
     validate: (context) => {
         const errors = [...requireNodes(context), ...requireEdges(context)];
         if (hasUndirectedEdges(context.graph)) {
@@ -54,7 +55,7 @@ export const kosaraju: AlgorithmDefinition = {
             });
             return {
                 id: 'scc-table',
-                title: 'Componentes fortemente conexas',
+                title: 'Componentes fortemente conexos',
                 columns: [
                     { key: 'component', label: 'Componente' },
                     { key: 'members', label: 'Vértices' },
@@ -73,9 +74,9 @@ export const kosaraju: AlgorithmDefinition = {
         };
 
         builder.commit({
-            title: 'Fase 1 — busca em profundidade no grafo original',
+            title: 'Passo 1 — busca em profundidade em G',
             description:
-                'A primeira DFS percorre o grafo original e empilha cada vértice no momento em que é finalizado.',
+                'A primeira busca em profundidade percorre G e empilha cada vértice no momento em que seu tempo de término TT é definido.',
             lists: [orderList()],
         });
 
@@ -84,7 +85,7 @@ export const kosaraju: AlgorithmDefinition = {
             builder.setNode(current, 'active');
             builder.commit({
                 title: `Visita ${labels.get(current)}`,
-                description: `${labels.get(current)} é descoberto na primeira busca.`,
+                description: `${labels.get(current)} é marcado na primeira busca em profundidade.`,
                 lists: [orderList()],
             });
 
@@ -100,7 +101,7 @@ export const kosaraju: AlgorithmDefinition = {
             builder.setNode(current, 'done');
             builder.commit({
                 title: `Finaliza ${labels.get(current)}`,
-                description: `${labels.get(current)} não tem mais vizinhos inexplorados e é empilhado. A pilha guarda a ordem decrescente de término.`,
+                description: `${labels.get(current)} não tem mais vizinhos a explorar: seu TT é definido e ele é empilhado. O topo da pilha é o vértice de maior TT.`,
                 lists: [orderList()],
             });
         };
@@ -113,8 +114,8 @@ export const kosaraju: AlgorithmDefinition = {
         graph.edges.forEach((edge) => builder.setEdge(edge.id, 'idle'));
 
         builder.commit({
-            title: 'Fase 2 — transposição do grafo',
-            description: `Todas as arestas são invertidas. Os vértices serão reprocessados na ordem inversa de finalização: ${[
+            title: 'Passo 2 — construção do grafo reverso Gᴿ',
+            description: `Todas as arestas são invertidas: se (v, w) ∈ E(G) então (w, v) ∈ E(Gᴿ). A segunda busca percorrerá Gᴿ em ordem decrescente de TT: ${[
                 ...finishOrder,
             ]
                 .reverse()
@@ -135,7 +136,7 @@ export const kosaraju: AlgorithmDefinition = {
 
             builder.commit({
                 title: `${labels.get(current)} entra em C${index + 1}`,
-                description: `No grafo transposto, ${labels.get(current)} é alcançável a partir da raiz da componente, portanto pertence à mesma componente fortemente conexa.`,
+                description: `Em Gᴿ, ${labels.get(current)} é alcançável a partir da raiz desta árvore de profundidade, portanto pertence ao mesmo componente fortemente conexo.`,
                 tables: [componentsTable()],
                 lists: [orderList()],
             });
@@ -152,7 +153,7 @@ export const kosaraju: AlgorithmDefinition = {
             if (visitedSecond.has(nodeId)) return;
             builder.commit({
                 title: `Nova componente a partir de ${labels.get(nodeId)}`,
-                description: `${labels.get(nodeId)} é o vértice não visitado com maior tempo de término, então ele inicia a componente C${componentIndex + 1}.`,
+                description: `${labels.get(nodeId)} é o vértice ainda não marcado com maior TT, então ele é a raiz de uma nova árvore de profundidade em Gᴿ, que corresponde ao componente C${componentIndex + 1}.`,
                 tables: [componentsTable()],
                 lists: [orderList()],
             });
@@ -166,16 +167,16 @@ export const kosaraju: AlgorithmDefinition = {
         });
 
         builder.commit({
-            title: 'Componentes identificadas',
-            description: `O grafo possui ${componentIndex} componente(s) fortemente conexa(s). Arestas destacadas ligam vértices da mesma componente.`,
+            title: 'Passo 3 — componentes identificados',
+            description: `Cada árvore da floresta de profundidade obtida em Gᴿ é um componente fortemente conexo: G possui ${componentIndex} componente(s) f-conexo(s). As arestas destacadas ligam vértices de um mesmo componente.`,
             tables: [componentsTable()],
         });
 
         return builder.build([
-            `Foram encontradas ${componentIndex} componente(s) fortemente conexa(s).`,
+            `Foram encontrados ${componentIndex} componente(s) fortemente conexo(s).`,
             componentIndex === 1
-                ? 'O grafo inteiro é fortemente conexo: existe caminho direcionado entre qualquer par de vértices.'
-                : 'O grafo de componentes (condensação) é um DAG.',
+                ? 'Todos os vértices são mutuamente alcançáveis, portanto G é fortemente conexo (f-conexo).'
+                : 'Como há mais de um componente f-conexo, G não é fortemente conexo: existe par de vértices que não se alcançam mutuamente.',
         ]);
     },
 };

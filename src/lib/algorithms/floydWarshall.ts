@@ -5,17 +5,18 @@ import { edgesAlongPath, labelOf, requireEdges, requireNodes } from './shared';
 
 export const floydWarshall: AlgorithmDefinition = {
     id: 'floyd-warshall',
-    name: 'Floyd-Warshall',
+    name: 'Método de Floyd-Warshall',
     shortName: 'Floyd-Warshall',
-    category: 'Caminhos mínimos',
+    category: 'Caminho mínimo',
     tagline:
-        'Caminhos mínimos entre todos os pares por programação dinâmica sobre vértices intermediários.',
-    complexity: 'O(V³)',
+        'Caminhos mínimos entre todos os pares por programação dinâmica: a rodada k libera o vértice k como intermediário.',
+    complexity: 'O(n³)',
     needsStart: false,
     needsEnd: false,
     constraints: [
-        'Aceita pesos negativos sem ciclos negativos',
-        'Calcula todos os pares de uma só vez',
+        'Admite arestas de custo negativo',
+        'Não admite ciclo de custo negativo',
+        'Calcula todos os pares de vértices de uma só vez',
     ],
     validate: (context) => [...requireNodes(context), ...requireEdges(context)],
     run: ({ graph, startId, endId }) => {
@@ -24,11 +25,11 @@ export const floydWarshall: AlgorithmDefinition = {
         const index = new Map<NodeId, number>(nodes.map((node, position) => [node.id, position]));
         const size = nodes.length;
 
+        // dist[i][j] e pred[i][j]: pred guarda o penúltimo vértice do caminho de i para j.
         const distance: number[][] = nodes.map((_, i) =>
             nodes.map((__, j) => (i === j ? 0 : Number.POSITIVE_INFINITY))
         );
-        const via: (NodeId | null)[][] = nodes.map(() => nodes.map(() => null));
-        const next: (NodeId | null)[][] = nodes.map((from, i) =>
+        const pred: (NodeId | null)[][] = nodes.map((from, i) =>
             nodes.map((_, j) => (i === j ? from.id : null))
         );
 
@@ -37,11 +38,11 @@ export const floydWarshall: AlgorithmDefinition = {
             const j = index.get(edge.target) as number;
             if (edge.weight < distance[i][j]) {
                 distance[i][j] = edge.weight;
-                next[i][j] = edge.target;
+                pred[i][j] = edge.source;
             }
             if (!edge.directed && edge.weight < distance[j][i]) {
                 distance[j][i] = edge.weight;
-                next[j][i] = edge.source;
+                pred[j][i] = edge.target;
             }
         });
 
@@ -51,9 +52,9 @@ export const floydWarshall: AlgorithmDefinition = {
             pivot?: number
         ): TraceTable => ({
             id: 'fw-matrix',
-            title: 'Matriz de distâncias',
+            title: 'Matriz dist',
             columns: [
-                { key: 'origin', label: 'de \\ para' },
+                { key: 'origin', label: 'i \\ j' },
                 ...nodes.map((node) => ({ key: node.id, label: node.label })),
             ],
             rows: nodes.map((from, i) => ({
@@ -73,21 +74,21 @@ export const floydWarshall: AlgorithmDefinition = {
             })),
         });
 
-        const intermediaries = (): TraceTable => ({
-            id: 'fw-next',
-            title: 'Matriz de sucessores',
+        const predecessors = (): TraceTable => ({
+            id: 'fw-pred',
+            title: 'Matriz pred',
             columns: [
-                { key: 'origin', label: 'de \\ para' },
+                { key: 'origin', label: 'i \\ j' },
                 ...nodes.map((node) => ({ key: node.id, label: node.label })),
             ],
             rows: nodes.map((from, i) => ({
-                key: `next-${from.id}`,
+                key: `pred-${from.id}`,
                 cells: {
                     origin: from.label,
                     ...Object.fromEntries(
                         nodes.map((to, j) => [
                             to.id,
-                            next[i][j] ? (labelOf(graph, next[i][j]) ?? '—') : '—',
+                            pred[i][j] ? (labelOf(graph, pred[i][j]) ?? '—') : '—',
                         ])
                     ),
                 },
@@ -95,10 +96,10 @@ export const floydWarshall: AlgorithmDefinition = {
         });
 
         builder.commit({
-            title: 'Matriz inicial',
+            title: 'Matrizes iniciais (k = 0)',
             description:
-                'A matriz começa com 0 na diagonal, o peso das arestas existentes e ∞ para os pares sem ligação direta.',
-            tables: [matrix(), intermediaries()],
+                'dist⁰[i, i] = 0, dist⁰[i, j] = dij para toda aresta (i, j) ∈ E(G) e ∞ para os pares sem ligação direta. Em pred, cada par ligado por aresta recebe o próprio i, pois i é o penúltimo vértice do caminho direto de i para j.',
+            tables: [matrix(), predecessors()],
         });
 
         for (let k = 0; k < size; k += 1) {
@@ -108,15 +109,20 @@ export const floydWarshall: AlgorithmDefinition = {
                 'idle'
             );
             builder.setNode(pivotNode.id, 'active');
-            builder.setNodeBadge(pivotNode.id, 'pivô');
+            builder.setNodeBadge(pivotNode.id, 'k');
 
             let improvements = 0;
 
             builder.commit({
-                title: `Vértice intermediário k = ${pivotNode.label}`,
-                description: `Testa-se, para todo par (i, j), se passar por ${pivotNode.label} é mais barato do que a rota já conhecida.`,
-                tables: [matrix(undefined, undefined, k), intermediaries()],
-                metrics: [{ label: 'Pivô', value: `${k + 1} / ${size}` }],
+                title: `k = ${pivotNode.label}`,
+                description: `Agora os vértices { ${nodes
+                    .slice(0, k + 1)
+                    .map((node) => node.label)
+                    .join(
+                        ', '
+                    )} } podem ser usados como intermediários. Para todo par (i, j), testa-se se dist[i, j] > dist[i, ${pivotNode.label}] + dist[${pivotNode.label}, j].`,
+                tables: [matrix(undefined, undefined, k), predecessors()],
+                metrics: [{ label: 'Intermediário k', value: `${k + 1} / ${size}` }],
             });
 
             for (let i = 0; i < size; i += 1) {
@@ -127,24 +133,23 @@ export const floydWarshall: AlgorithmDefinition = {
 
                     const previous = distance[i][j];
                     distance[i][j] = throughPivot;
-                    via[i][j] = pivotNode.id;
-                    next[i][j] = next[i][k];
+                    pred[i][j] = pred[k][j];
                     improvements += 1;
 
                     builder.commit({
-                        title: `d(${nodes[i].label}, ${nodes[j].label}) = ${formatWeight(throughPivot)}`,
-                        description: `d(${nodes[i].label}, ${pivotNode.label}) + d(${pivotNode.label}, ${nodes[j].label}) = ${formatWeight(distance[i][k])} + ${formatWeight(distance[k][j])} = ${formatWeight(throughPivot)}, melhor que ${formatDistance(previous)}.`,
-                        tables: [matrix(i, j, k), intermediaries()],
-                        metrics: [{ label: 'Pivô', value: `${k + 1} / ${size}` }],
+                        title: `dist[${nodes[i].label}, ${nodes[j].label}] ← ${formatWeight(throughPivot)}`,
+                        description: `dist[${nodes[i].label}, ${pivotNode.label}] + dist[${pivotNode.label}, ${nodes[j].label}] = ${formatWeight(distance[i][k])} + ${formatWeight(distance[k][j])} = ${formatWeight(throughPivot)}, menor que ${formatDistance(previous)}. Atualiza-se também pred[${nodes[i].label}, ${nodes[j].label}] ← pred[${pivotNode.label}, ${nodes[j].label}] = ${labelOf(graph, pred[k][j])}.`,
+                        tables: [matrix(i, j, k), predecessors()],
+                        metrics: [{ label: 'Intermediário k', value: `${k + 1} / ${size}` }],
                     });
                 }
             }
 
             if (improvements === 0) {
                 builder.commit({
-                    title: `Nenhuma melhoria com ${pivotNode.label}`,
-                    description: `Nenhum par de vértices se beneficia de passar por ${pivotNode.label}.`,
-                    tables: [matrix(undefined, undefined, k), intermediaries()],
+                    title: `Nenhuma melhoria com k = ${pivotNode.label}`,
+                    description: `Nenhum par (i, j) reduz sua distância passando por ${pivotNode.label}.`,
+                    tables: [matrix(undefined, undefined, k), predecessors()],
                 });
             }
         }
@@ -163,49 +168,49 @@ export const floydWarshall: AlgorithmDefinition = {
                 builder.setNodeBadge(node.id, 'ciclo −');
             });
             conclusions.push(
-                `Ciclo de peso negativo detectado: ${negativeCycleNodes.map((node) => node.label).join(', ')} têm distância negativa até si mesmos.`
+                `Ciclo de custo negativo detectado: dist[i, i] < 0 para ${negativeCycleNodes
+                    .map((node) => node.label)
+                    .join(
+                        ', '
+                    )}. Nesse caso não há caminho mínimo bem definido entre os pares afetados.`
             );
         } else {
             conclusions.push(
-                'Nenhuma entrada da diagonal ficou negativa, portanto o grafo não possui ciclos de peso negativo.'
+                'Nenhuma entrada da diagonal ficou negativa, portanto o grafo não possui ciclo de custo negativo.'
             );
         }
 
-        if (startId && endId) {
+        if (startId && endId && startId !== endId) {
             const i = index.get(startId) as number;
             const j = index.get(endId) as number;
-            const path: NodeId[] = [];
-            const cursor: NodeId | null = next[i][j];
-            if (cursor) {
-                path.push(startId);
-                let guard = 0;
-                let position = i;
-                while (position !== j && guard < size * size) {
-                    const step = next[position][j];
-                    if (!step) break;
-                    path.push(step);
-                    position = index.get(step) as number;
-                    guard += 1;
-                }
-                if (path[path.length - 1] === endId) {
-                    edgesAlongPath(graph, path).forEach((edgeId) =>
-                        builder.setEdge(edgeId, 'path')
-                    );
-                    path.forEach((nodeId) => builder.setNode(nodeId, 'path'));
-                    conclusions.push(
-                        `Caminho mínimo de ${labelOf(graph, startId)} até ${labelOf(graph, endId)}: ${path
-                            .map((id) => labelOf(graph, id))
-                            .join(' → ')} (custo ${formatDistance(distance[i][j])}).`
-                    );
-                }
+            const path: NodeId[] = [endId];
+            let cursor: NodeId = endId;
+            let guard = 0;
+
+            while (cursor !== startId && guard < size + 1) {
+                const previous = pred[i][index.get(cursor) as number];
+                if (!previous) break;
+                path.unshift(previous);
+                cursor = previous;
+                guard += 1;
+            }
+
+            if (path[0] === startId && Number.isFinite(distance[i][j])) {
+                edgesAlongPath(graph, path).forEach((edgeId) => builder.setEdge(edgeId, 'path'));
+                path.forEach((nodeId) => builder.setNode(nodeId, 'path'));
+                conclusions.push(
+                    `Caminho mínimo de ${labelOf(graph, startId)} até ${labelOf(graph, endId)}, recuperado de trás para frente pela matriz pred: ${path
+                        .map((id) => labelOf(graph, id))
+                        .join(' → ')} (custo ${formatDistance(distance[i][j])}).`
+                );
             }
         }
 
         builder.commit({
-            title: 'Matriz final',
+            title: 'Matrizes finais',
             description:
-                'Após considerar todos os vértices como intermediários, a matriz contém a distância mínima entre cada par de vértices.',
-            tables: [matrix(), intermediaries()],
+                'Após liberar todos os vértices como intermediários, dist[i, j] contém a distância mínima entre cada par de vértices e pred[i, j] permite recuperar os caminhos.',
+            tables: [matrix(), predecessors()],
         });
 
         return builder.build(conclusions);

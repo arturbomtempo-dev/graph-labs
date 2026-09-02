@@ -11,14 +11,19 @@ import { requireEdges, requireNodes } from './shared';
 
 export const kruskal: AlgorithmDefinition = {
     id: 'kruskal',
-    name: 'Kruskal',
+    name: 'Método de Kruskal',
     shortName: 'Kruskal',
     category: 'Árvore geradora mínima',
-    tagline: 'Ordena as arestas por peso e une florestas com conjuntos disjuntos.',
-    complexity: 'O(E log E)',
+    tagline:
+        'Inclui arestas, e não vértices: ordena as arestas por custo não decrescente e aceita cada uma que não forme ciclo com as já inseridas em E(T).',
+    complexity: 'O(m log m)',
     needsStart: false,
     needsEnd: false,
-    constraints: ['Exige grafo não direcionado', 'Usa os pesos das arestas'],
+    constraints: [
+        'Exige grafo não direcionado',
+        'Exige grafo ponderado com custo c_e > 0',
+        'Em grafo desconexo produz uma floresta geradora mínima',
+    ],
     validate: (context) => {
         const errors = [...requireNodes(context), ...requireEdges(context)];
         if (hasDirectedEdges(context.graph)) {
@@ -32,6 +37,8 @@ export const kruskal: AlgorithmDefinition = {
         const builder = createTraceBuilder(graph);
         const labels = nodeLabelMap(graph);
 
+        // Estrutura auxiliar que responde, em tempo quase constante, se dois vértices já
+        // estão ligados por arestas de E(T) — isto é, se a aresta analisada formaria ciclo.
         const parent = new Map<NodeId, NodeId>();
         const rank = new Map<NodeId, number>();
         graph.nodes.forEach((node) => {
@@ -84,17 +91,17 @@ export const kruskal: AlgorithmDefinition = {
                 const root = find(node.id);
                 if (!roots.has(root)) roots.set(root, roots.size);
                 builder.setNodeGroup(node.id, roots.get(root) as number);
-                builder.setNodeBadge(node.id, `S${(roots.get(root) as number) + 1}`);
+                builder.setNodeBadge(node.id, `T${(roots.get(root) as number) + 1}`);
             });
             return roots.size;
         };
 
         const edgeQueueTable = (): TraceTable => ({
             id: 'kruskal-edges',
-            title: 'Arestas ordenadas por peso',
+            title: 'Arestas em ordem não decrescente de custo',
             columns: [
                 { key: 'edge', label: 'Aresta' },
-                { key: 'weight', label: 'Peso' },
+                { key: 'weight', label: 'Custo' },
                 { key: 'decision', label: 'Decisão' },
             ],
             rows: ordered.map((edge, index) => ({
@@ -111,9 +118,9 @@ export const kruskal: AlgorithmDefinition = {
                     edge: `${labels.get(edge.source)} — ${labels.get(edge.target)}`,
                     weight: formatWeight(edge.weight),
                     decision: accepted.includes(edge.id)
-                        ? 'aceita'
+                        ? 'entra em E(T)'
                         : rejected.includes(edge.id)
-                          ? 'rejeitada (ciclo)'
+                          ? 'forma ciclo — ignorada'
                           : index === examinedIndex
                             ? 'em análise'
                             : 'aguardando',
@@ -131,35 +138,40 @@ export const kruskal: AlgorithmDefinition = {
             });
             return {
                 id: 'kruskal-sets',
-                title: 'Conjuntos disjuntos',
+                title: 'Componentes da floresta parcial T',
                 columns: [
-                    { key: 'setName', label: 'Conjunto' },
+                    { key: 'setName', label: 'Componente' },
                     { key: 'members', label: 'Vértices' },
                 ],
                 rows: [...groups.values()].map((members, index) => ({
                     key: `set-${index}`,
-                    cells: { setName: `S${index + 1}`, members: members.join(', ') },
+                    cells: { setName: `T${index + 1}`, members: members.join(', ') },
                 })),
             };
         };
 
         const metrics = () => [
             {
-                label: 'Arestas aceitas',
+                label: 'Arestas em E(T)',
                 value: `${accepted.length} / ${Math.max(graph.nodes.length - 1, 0)}`,
             },
-            { label: 'Peso total', value: formatWeight(totalWeight) },
+            { label: 'Custo total C(T)', value: formatWeight(totalWeight) },
         ];
 
         applyGroups();
         builder.commit({
             title: 'Inicialização',
-            description: `Cada vértice começa em seu próprio conjunto disjunto. As ${ordered.length} arestas foram ordenadas de forma crescente por peso.`,
+            description: `V(T) recebe todos os vértices de V(G) e E(T) começa vazio, portanto cada vértice é um componente isolado da floresta. As ${ordered.length} arestas foram ordenadas em ordem não decrescente de custo.`,
             tables: [edgeQueueTable(), setsTable()],
             metrics: metrics(),
         });
 
-        ordered.forEach((edge, index) => {
+        const target = Math.max(graph.nodes.length - 1, 0);
+        let iterationsUsed = 0;
+
+        for (const [index, edge] of ordered.entries()) {
+            if (accepted.length >= target) break;
+            iterationsUsed = index + 1;
             examinedIndex = index;
             builder.resetEdgesWithState('active', 'idle');
             builder.setEdge(edge.id, 'active');
@@ -171,10 +183,10 @@ export const kruskal: AlgorithmDefinition = {
             const createsCycle = rootSource === rootTarget;
 
             builder.commit({
-                title: `Examina ${labels.get(edge.source)} — ${labels.get(edge.target)} (peso ${formatWeight(edge.weight)})`,
+                title: `Analisa {${labels.get(edge.source)}, ${labels.get(edge.target)}} — custo ${formatWeight(edge.weight)}`,
                 description: createsCycle
-                    ? `Os dois extremos já pertencem ao mesmo conjunto disjunto, portanto a aresta fecharia um ciclo.`
-                    : `Os extremos estão em conjuntos diferentes, portanto a aresta pode ser aceita sem formar ciclo.`,
+                    ? `Os dois extremos já estão ligados por arestas de E(T), portanto essa aresta formaria um ciclo.`
+                    : `Os extremos estão em componentes diferentes da floresta parcial, portanto a aresta não forma ciclo com as arestas de E(T).`,
                 tables: [edgeQueueTable(), setsTable()],
                 metrics: metrics(),
             });
@@ -193,14 +205,16 @@ export const kruskal: AlgorithmDefinition = {
             }
 
             builder.commit({
-                title: createsCycle ? 'Aresta rejeitada' : 'Aresta aceita',
+                title: createsCycle
+                    ? 'Aresta ignorada (forma ciclo)'
+                    : 'Aresta acrescentada a E(T)',
                 description: createsCycle
-                    ? `A aresta é descartada e os conjuntos permanecem inalterados.`
-                    : `A aresta entra na floresta e os conjuntos de ${labels.get(edge.source)} e ${labels.get(edge.target)} são unidos.`,
+                    ? `A aresta é ignorada e a floresta parcial permanece inalterada — por isso podem ser necessárias mais de n − 1 iterações.`
+                    : `A aresta entra em E(T) e os componentes de ${labels.get(edge.source)} e ${labels.get(edge.target)} passam a ser um só.`,
                 tables: [edgeQueueTable(), setsTable()],
                 metrics: metrics(),
             });
-        });
+        }
 
         examinedIndex = -1;
         builder.resetEdgesWithState('active', 'idle');
@@ -211,17 +225,21 @@ export const kruskal: AlgorithmDefinition = {
         const componentCount = applyGroups();
 
         builder.commit({
-            title: 'Floresta geradora mínima concluída',
-            description: `Foram aceitas ${accepted.length} aresta(s) com peso total ${formatWeight(totalWeight)}.`,
+            title: 'Execução concluída',
+            description:
+                accepted.length >= target
+                    ? `| E(T) | = | V(T) | − 1 = ${target}: o laço termina com custo total C(T) = ${formatWeight(totalWeight)}.`
+                    : `Todas as arestas foram analisadas sem atingir | V(T) | − 1 = ${target} arestas, portanto o grafo é desconexo. Custo total C(T) = ${formatWeight(totalWeight)}.`,
             tables: [edgeQueueTable(), setsTable()],
             metrics: metrics(),
         });
 
         return builder.build([
-            `Peso total: ${formatWeight(totalWeight)} com ${accepted.length} aresta(s) aceita(s) e ${rejected.length} rejeitada(s).`,
+            `Custo total: C(T) = ${formatWeight(totalWeight)}, com ${accepted.length} aresta(s) em E(T) e ${rejected.length} aresta(s) ignorada(s) por formarem ciclo.`,
+            `Foram necessárias ${iterationsUsed} iteração(ões) para ${accepted.length} aresta(s) aceita(s): como as arestas que formam ciclo precisam ser ignoradas, n − 1 iterações podem não bastar.`,
             componentCount === 1
-                ? 'O grafo é conexo, portanto o resultado é uma árvore geradora mínima.'
-                : `O grafo possui ${componentCount} componentes, portanto o resultado é uma floresta geradora mínima.`,
+                ? 'O grafo é conexo, portanto o resultado é uma árvore geradora de custo mínimo (AGM).'
+                : `O grafo possui ${componentCount} componentes conexos, portanto o resultado é uma floresta geradora mínima.`,
         ]);
     },
 };

@@ -13,32 +13,33 @@ const arcKey = (from: NodeId, to: NodeId) => `${from}>${to}`;
 
 export const fordFulkerson: AlgorithmDefinition = {
     id: 'ford-fulkerson',
-    name: 'Ford-Fulkerson',
+    name: 'Método de Ford-Fulkerson',
     shortName: 'Ford-Fulkerson',
     category: 'Fluxo máximo',
     tagline:
-        'Aumenta o fluxo por caminhos na rede residual até não existir mais caminho aumentante.',
-    complexity: 'O(V · E²) com busca em largura',
+        'Enquanto existir caminho aumentante na rede residual G′(f), envia por ele o gargalo δ e atualiza a rede residual.',
+    complexity: 'O(m · f) com capacidades inteiras',
     needsStart: true,
     needsEnd: true,
     constraints: [
-        'Exige grafo direcionado com capacidades não negativas',
-        'Requer um vértice fonte e um vértice sumidouro',
+        'Exige rede de fluxo: grafo direcionado com capacidade u(e) > 0',
+        'Requer uma fonte s e um sumidouro t',
+        'Respeita as condições de capacidade e de conservação',
     ],
     validate: (context) => {
         const errors = [...requireNodes(context), ...requireEdges(context)];
-        if (!context.startId) errors.push('Selecione o vértice fonte.');
-        if (!context.endId) errors.push('Selecione o vértice sumidouro.');
+        if (!context.startId) errors.push('Selecione o vértice fonte s.');
+        if (!context.endId) errors.push('Selecione o vértice sumidouro t.');
         if (context.startId && context.startId === context.endId) {
-            errors.push('A fonte e o sumidouro precisam ser vértices diferentes.');
+            errors.push('A fonte s e o sumidouro t precisam ser vértices diferentes.');
         }
         if (hasUndirectedEdges(context.graph)) {
             errors.push(
-                'Ford-Fulkerson opera sobre redes direcionadas: converta todas as arestas para direcionadas.'
+                'Uma rede de fluxo é um grafo direcionado: converta todas as arestas para direcionadas.'
             );
         }
         if (context.graph.edges.some((edge) => edge.weight < 0)) {
-            errors.push('As capacidades das arestas não podem ser negativas.');
+            errors.push('Em uma rede de fluxo, toda aresta tem capacidade u(e) > 0.');
         }
         return errors;
     },
@@ -83,12 +84,12 @@ export const fordFulkerson: AlgorithmDefinition = {
 
         const residualTable = (): TraceTable => ({
             id: 'residual',
-            title: 'Capacidades residuais',
+            title: 'Fluxo e capacidades residuais',
             columns: [
-                { key: 'arc', label: 'Arco' },
-                { key: 'flow', label: 'Fluxo' },
-                { key: 'capacityValue', label: 'Capacidade' },
-                { key: 'residualValue', label: 'Residual' },
+                { key: 'arc', label: 'Aresta e' },
+                { key: 'flow', label: 'f(e)' },
+                { key: 'capacityValue', label: 'u(e)' },
+                { key: 'residualValue', label: 'u_r(e)' },
             ],
             rows: [...graph.edges]
                 .sort((a, b) =>
@@ -118,14 +119,14 @@ export const fordFulkerson: AlgorithmDefinition = {
         refreshBadges();
         builder.setNode(source, 'active');
         builder.setNode(sink, 'path');
-        builder.setNodeBadge(source, 'fonte');
-        builder.setNodeBadge(sink, 'sumidouro');
+        builder.setNodeBadge(source, 's');
+        builder.setNodeBadge(sink, 't');
 
         builder.commit({
-            title: 'Rede residual inicial',
-            description: `Todo o fluxo começa em zero, portanto a capacidade residual de cada arco é igual à sua capacidade. A fonte é ${labelOf(graph, source)} e o sumidouro é ${labelOf(graph, sink)}.`,
+            title: 'Rede residual inicial G′(f)',
+            description: `f(e) = 0 para toda aresta, portanto a capacidade residual de cada aresta direta é u_r(e) = u(e) − f(e) = u(e). A fonte é s = ${labelOf(graph, source)}, o sumidouro é t = ${labelOf(graph, sink)} e os demais são nós internos.`,
             tables: [residualTable()],
-            metrics: [{ label: 'Fluxo máximo', value: '0' }],
+            metrics: [{ label: 'Valor do fluxo', value: '0' }],
         });
 
         const iterationLimit = graph.nodes.length * graph.edges.length + 50;
@@ -162,13 +163,13 @@ export const fordFulkerson: AlgorithmDefinition = {
                 });
 
                 builder.commit({
-                    title: 'Nenhum caminho aumentante restante',
-                    description: `A busca a partir da fonte alcança apenas ${[...visited].map((id) => labels.get(id)).join(', ')}. Esse conjunto define o corte mínimo, cujas arestas estão destacadas em vermelho.`,
+                    title: 'Não existe caminho aumentante em G′(f)',
+                    description: `Em G′(f), a partir de s alcança-se apenas S = { ${[...visited].map((id) => labels.get(id)).join(', ')} }. Esse é o conjunto S do corte s-t mínimo, e as arestas de corte(S) — com uma extremidade em S e a outra fora — estão destacadas em vermelho.`,
                     tables: [residualTable()],
                     metrics: [
-                        { label: 'Fluxo máximo', value: formatWeight(maxFlow) },
+                        { label: 'Valor do fluxo', value: formatWeight(maxFlow) },
                         {
-                            label: 'Capacidade do corte',
+                            label: 'Capacidade do corte(S)',
                             value: formatWeight(
                                 cutEdges.reduce((total, edge) => total + edge.weight, 0)
                             ),
@@ -177,9 +178,10 @@ export const fordFulkerson: AlgorithmDefinition = {
                 });
 
                 return builder.build([
-                    `Fluxo máximo da rede: ${formatWeight(maxFlow)}.`,
+                    `Fluxo máximo entre s = ${labelOf(graph, source)} e t = ${labelOf(graph, sink)}: ${formatWeight(maxFlow)}.`,
                     `Foram usados ${augmentingPaths.length} caminho(s) aumentante(s): ${augmentingPaths.join(' | ') || '—'}.`,
-                    `Corte mínimo: ${cutEdges.map((edge) => `${labels.get(edge.source)}→${labels.get(edge.target)}`).join(', ') || '—'}, com capacidade ${formatWeight(cutEdges.reduce((total, edge) => total + edge.weight, 0))}, confirmando o teorema fluxo máximo/corte mínimo.`,
+                    `Corte s-t mínimo: corte(S) = { ${cutEdges.map((edge) => `(${labels.get(edge.source)}, ${labels.get(edge.target)})`).join(', ') || '—'} }, de capacidade ${formatWeight(cutEdges.reduce((total, edge) => total + edge.weight, 0))} — igual ao valor do fluxo máximo, como afirma o teorema do fluxo máximo e corte mínimo.`,
+                    'Na solução ótima, S é exatamente o conjunto dos vértices alcançáveis a partir da fonte s na rede residual final.',
                 ]);
             }
 
@@ -216,11 +218,11 @@ export const fordFulkerson: AlgorithmDefinition = {
 
             builder.commit({
                 title: `Caminho aumentante ${iteration}: ${pathLabel}`,
-                description: `A busca em largura na rede residual encontrou o caminho ${pathLabel}. O gargalo é a menor capacidade residual do caminho: ${formatWeight(bottleneck)}.`,
+                description: `Existe um caminho P de s a t em G′(f): ${pathLabel}. O gargalo é δ = min { u_r(e) | e ∈ P } = ${formatWeight(bottleneck)}. (Escolher sempre o caminho aumentante com menos arestas, como aqui, é o refinamento de Edmonds-Karp.)`,
                 tables: [residualTable()],
                 metrics: [
-                    { label: 'Fluxo máximo', value: formatWeight(maxFlow) },
-                    { label: 'Gargalo', value: formatWeight(bottleneck) },
+                    { label: 'Valor do fluxo', value: formatWeight(maxFlow) },
+                    { label: 'Gargalo δ', value: formatWeight(bottleneck) },
                 ],
             });
 
@@ -236,15 +238,15 @@ export const fordFulkerson: AlgorithmDefinition = {
             refreshBadges();
 
             builder.commit({
-                title: `Fluxo aumentado em ${formatWeight(bottleneck)}`,
-                description: `Cada arco do caminho perde ${formatWeight(bottleneck)} de capacidade residual e o arco reverso ganha a mesma quantia, permitindo desfazer o envio em iterações futuras. O fluxo total passa a ser ${formatWeight(maxFlow)}.`,
+                title: `Fluxo aumentado em δ = ${formatWeight(bottleneck)}`,
+                description: `Nas arestas diretas de P faz-se f(v, w) ← f(v, w) + δ; nas reversas, f(w, v) ← f(w, v) − δ. A rede residual G′(f) é então atualizada: cada aresta direta perde ${formatWeight(bottleneck)} de capacidade residual e a reversa correspondente ganha a mesma quantia, o que permite desfazer o envio em iterações futuras. O valor do fluxo passa a ser ${formatWeight(maxFlow)}.`,
                 tables: [residualTable()],
-                metrics: [{ label: 'Fluxo máximo', value: formatWeight(maxFlow) }],
+                metrics: [{ label: 'Valor do fluxo', value: formatWeight(maxFlow) }],
             });
         }
 
         return builder.build([
-            `Fluxo alcançado: ${formatWeight(maxFlow)} após ${iteration} iterações.`,
+            `Valor do fluxo alcançado: ${formatWeight(maxFlow)} após ${iteration} iterações.`,
             'O limite de iterações foi atingido: revise as capacidades da rede.',
         ]);
     },

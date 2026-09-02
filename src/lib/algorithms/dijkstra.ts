@@ -20,14 +20,18 @@ import {
 
 export const dijkstra: AlgorithmDefinition = {
     id: 'dijkstra',
-    name: 'Dijkstra',
+    name: 'Algoritmo de Dijkstra',
     shortName: 'Dijkstra',
-    category: 'Caminhos mínimos',
-    tagline: 'Caminhos mínimos de origem única fechando sempre o vértice mais próximo.',
-    complexity: 'O(E log V)',
+    category: 'Caminho mínimo',
+    tagline:
+        'Caminhos mínimos de origem única: a cada iteração visita o vértice não visitado com a menor estimativa e relaxa suas arestas.',
+    complexity: 'O((n + m) log n)',
     needsStart: true,
     needsEnd: false,
-    constraints: ['Aceita arestas direcionadas e não direcionadas', 'Não admite pesos negativos'],
+    constraints: [
+        'Aceita arestas direcionadas e não direcionadas',
+        'Exige w : E → ℝ⁺ (sem pesos negativos)',
+    ],
     validate: (context) => {
         const errors = [
             ...requireNodes(context),
@@ -36,7 +40,7 @@ export const dijkstra: AlgorithmDefinition = {
         ];
         if (hasNegativeWeights(context.graph)) {
             errors.push(
-                'Dijkstra não admite pesos negativos: use Bellman-Ford para grafos com arestas negativas.'
+                'Dijkstra exige w : E → ℝ⁺. Com arestas de peso negativo o método falha — use Bellman-Ford. Reponderar somando uma constante também não resolve.'
             );
         }
         return errors;
@@ -63,15 +67,16 @@ export const dijkstra: AlgorithmDefinition = {
         const table = (highlight?: NodeId) =>
             distanceTable(graph, distance, parent, {
                 id: 'dijkstra-table',
-                title: 'Distâncias provisórias',
+                title: 'Estimativas de caminho mínimo',
                 distanceLabel: 'd',
+                parentLabel: 'π',
                 highlight: highlight ? new Set([highlight]) : undefined,
                 settled,
             });
 
         const queueList = () => ({
             id: 'open-set',
-            title: 'Vértices abertos',
+            title: 'Q — vértices não visitados',
             variant: 'set' as const,
             items: sortedNodes(graph)
                 .filter((node) => !settled.has(node.id))
@@ -83,7 +88,7 @@ export const dijkstra: AlgorithmDefinition = {
 
         builder.commit({
             title: 'Inicialização',
-            description: `A distância da origem ${labelOf(graph, source)} é 0 e todas as demais começam em ∞. Nenhum vértice está fechado.`,
+            description: `d[${labelOf(graph, source)}] = 0 na origem e d[v] = ∞ nos demais, com π[v] = NULL. S = ∅ e Q recebe todos os vértices.`,
             tables: [table()],
             lists: [queueList()],
         });
@@ -104,7 +109,7 @@ export const dijkstra: AlgorithmDefinition = {
                 builder.commit({
                     title: 'Vértices inalcançáveis',
                     description:
-                        'Todos os vértices restantes têm distância ∞: eles não são alcançáveis a partir da origem e o algoritmo encerra.',
+                        'Todos os vértices restantes em Q têm d = ∞: eles não são alcançáveis a partir da origem e o algoritmo encerra.',
                     tables: [table()],
                     lists: [queueList()],
                 });
@@ -120,8 +125,8 @@ export const dijkstra: AlgorithmDefinition = {
             if (linkingEdge) builder.setEdge(linkingEdge, 'done');
 
             builder.commit({
-                title: `Fecha ${labels.get(current)} com d = ${formatWeight(best)}`,
-                description: `${labels.get(current)} é o vértice aberto com menor distância. Como não há pesos negativos, essa distância já é definitiva.`,
+                title: `ExtractMin(Q) = ${labels.get(current)}, d = ${formatWeight(best)}`,
+                description: `${labels.get(current)} é o vértice não visitado com a menor estimativa de caminho mais curto e passa a S. Como w : E → ℝ⁺, d[${labels.get(current)}] já é o peso do caminho mínimo definitivo.`,
                 tables: [table(current)],
                 lists: [queueList()],
             });
@@ -139,15 +144,15 @@ export const dijkstra: AlgorithmDefinition = {
                     builder.setNode(entry.to, 'frontier');
                     builder.setNodeBadge(entry.to, formatWeight(candidateDistance));
                     builder.commit({
-                        title: `Relaxa ${labels.get(current)} → ${labels.get(entry.to)}`,
-                        description: `d(${labels.get(current)}) + peso = ${formatWeight(best)} + ${formatWeight(entry.edge.weight)} = ${formatWeight(candidateDistance)}, que é menor que ${formatDistance(currentDistance)}. A distância e o predecessor de ${labels.get(entry.to)} são atualizados.`,
+                        title: `Relaxa (${labels.get(current)}, ${labels.get(entry.to)})`,
+                        description: `d[${labels.get(entry.to)}] = ${formatDistance(currentDistance)} > d[${labels.get(current)}] + w(${labels.get(current)}, ${labels.get(entry.to)}) = ${formatWeight(best)} + ${formatWeight(entry.edge.weight)} = ${formatWeight(candidateDistance)}. Então d[${labels.get(entry.to)}] ← ${formatWeight(candidateDistance)} e π[${labels.get(entry.to)}] ← ${labels.get(current)}.`,
                         tables: [table(entry.to)],
                         lists: [queueList()],
                     });
                 } else {
                     builder.commit({
-                        title: `Sem melhora para ${labels.get(entry.to)}`,
-                        description: `${formatWeight(best)} + ${formatWeight(entry.edge.weight)} = ${formatWeight(candidateDistance)} não é menor que a distância atual ${formatDistance(currentDistance)}, então nada muda.`,
+                        title: `Aresta (${labels.get(current)}, ${labels.get(entry.to)}) não relaxa`,
+                        description: `d[${labels.get(current)}] + w(${labels.get(current)}, ${labels.get(entry.to)}) = ${formatWeight(best)} + ${formatWeight(entry.edge.weight)} = ${formatWeight(candidateDistance)} não é menor que d[${labels.get(entry.to)}] = ${formatDistance(currentDistance)}, então nada muda.`,
                         tables: [table(entry.to)],
                         lists: [queueList()],
                     });
@@ -159,12 +164,13 @@ export const dijkstra: AlgorithmDefinition = {
         builder.resetEdgesWithState('frontier', 'idle');
 
         const conclusions = [
-            `Distâncias finais a partir de ${labelOf(graph, source)}: ${sortedNodes(graph)
+            `Pesos dos caminhos mínimos a partir de ${labelOf(graph, source)}: ${sortedNodes(graph)
                 .map(
                     (node) =>
                         `${node.label} = ${formatDistance(distance.get(node.id) ?? Number.POSITIVE_INFINITY)}`
                 )
                 .join(', ')}.`,
+            'd[ ] guarda apenas os pesos dos caminhos mínimos; os caminhos em si são recuperados percorrendo a lista de predecessores π[ ].',
         ];
 
         if (endId && Number.isFinite(distance.get(endId) ?? Infinity)) {
@@ -173,7 +179,7 @@ export const dijkstra: AlgorithmDefinition = {
                 edgesAlongPath(graph, path).forEach((edgeId) => builder.setEdge(edgeId, 'path'));
                 path.forEach((nodeId) => builder.setNode(nodeId, 'path'));
                 conclusions.push(
-                    `Caminho mínimo até ${labelOf(graph, endId)}: ${path.map((id) => labels.get(id)).join(' → ')} (custo ${formatDistance(distance.get(endId) ?? Infinity)}).`
+                    `Caminho mínimo até ${labelOf(graph, endId)}, obtido por π[ ]: ${path.map((id) => labels.get(id)).join(' → ')} (peso ${formatDistance(distance.get(endId) ?? Infinity)}).`
                 );
             }
         }
@@ -183,7 +189,7 @@ export const dijkstra: AlgorithmDefinition = {
             description:
                 endId && Number.isFinite(distance.get(endId) ?? Infinity)
                     ? `O caminho mínimo até ${labelOf(graph, endId)} está destacado em roxo.`
-                    : 'Todos os vértices alcançáveis foram fechados com sua distância definitiva.',
+                    : 'Todos os vértices alcançáveis foram visitados e estão em S com sua estimativa definitiva.',
             tables: [table()],
         });
 

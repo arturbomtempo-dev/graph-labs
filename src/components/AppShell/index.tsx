@@ -1,7 +1,9 @@
+import { AuthorAvatar } from '@/components/AuthorAvatar';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { author } from '@/lib/author';
+import { cn } from '@/lib/utils/cn';
 import { Waypoints } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { cn } from '@/lib/utils/cn';
 
 const navigation = [
     { to: '/', label: 'Início', end: true },
@@ -44,6 +46,25 @@ export function AppShell() {
                     </nav>
 
                     <ThemeToggle />
+
+                    <NavLink
+                        to="/sobre"
+                        title={`Sobre ${author.name}`}
+                        aria-label={`Sobre ${author.name}`}
+                        className={({ isActive }) =>
+                            cn(
+                                'shrink-0 cursor-pointer rounded-full ring-2 transition-all duration-150',
+                                isActive
+                                    ? 'ring-brand'
+                                    : 'ring-line hover:ring-brand/60 hover:brightness-105'
+                            )
+                        }
+                    >
+                        <AuthorAvatar
+                            className="size-8 rounded-full"
+                            fallbackClassName="text-[10px]"
+                        />
+                    </NavLink>
                 </div>
             </header>
 

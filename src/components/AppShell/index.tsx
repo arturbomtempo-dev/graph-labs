@@ -1,7 +1,8 @@
+import { Footer } from '@/components/Footer';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { cn } from '@/lib/utils/cn';
 import { Waypoints } from 'lucide-react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 
 const navigation = [
     { to: '/', label: 'Início', end: true },
@@ -11,6 +12,9 @@ const navigation = [
 ];
 
 export function AppShell() {
+    const { pathname } = useLocation();
+    const isStudio = pathname.startsWith('/estudio');
+
     return (
         <div className="flex min-h-dvh flex-col">
             <header className="border-line bg-surface/85 sticky top-0 z-30 border-b backdrop-blur-md">
@@ -51,6 +55,8 @@ export function AppShell() {
             <main className="flex flex-1 flex-col">
                 <Outlet />
             </main>
+
+            {isStudio ? null : <Footer />}
         </div>
     );
 }

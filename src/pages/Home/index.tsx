@@ -1,6 +1,5 @@
 import { MousePointerClick, Route, TableProperties } from 'lucide-react';
 import { AlgorithmGrid } from './_components/AlgorithmGrid';
-import { AuthorCredit } from './_components/AuthorCredit';
 import { HeroSection } from './_components/HeroSection';
 
 const capabilities = [
@@ -46,8 +45,6 @@ export function Home() {
             </section>
 
             <AlgorithmGrid />
-
-            <AuthorCredit />
         </div>
     );
 }

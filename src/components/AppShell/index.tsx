@@ -1,6 +1,4 @@
-import { AuthorAvatar } from '@/components/AuthorAvatar';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { author } from '@/lib/author';
 import { cn } from '@/lib/utils/cn';
 import { Waypoints } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
@@ -9,13 +7,14 @@ const navigation = [
     { to: '/', label: 'Início', end: true },
     { to: '/estudio', label: 'Estúdio', end: false },
     { to: '/algoritmos', label: 'Algoritmos', end: false },
+    { to: '/sobre', label: 'Sobre', end: false },
 ];
 
 export function AppShell() {
     return (
         <div className="flex min-h-dvh flex-col">
             <header className="border-line bg-surface/85 sticky top-0 z-30 border-b backdrop-blur-md">
-                <div className="mx-auto flex h-14 w-full max-w-[1600px] items-center gap-3 px-4 sm:px-6">
+                <div className="mx-auto flex h-14 w-full max-w-[1600px] items-center gap-2 px-4 sm:gap-3 sm:px-6">
                     <NavLink to="/" className="flex shrink-0 items-center gap-2">
                         <span className="bg-brand text-brand-ink flex size-7 items-center justify-center rounded-lg">
                             <Waypoints size={16} />
@@ -25,7 +24,7 @@ export function AppShell() {
                         </span>
                     </NavLink>
 
-                    <nav className="bg-surface-sunken border-line ml-auto flex items-center gap-0.5 rounded-lg border p-0.5">
+                    <nav className="bg-surface-sunken border-line no-scrollbar ml-auto flex min-w-0 items-center gap-0.5 overflow-x-auto rounded-lg border p-0.5">
                         {navigation.map((item) => (
                             <NavLink
                                 key={item.to}
@@ -33,7 +32,7 @@ export function AppShell() {
                                 end={item.end}
                                 className={({ isActive }) =>
                                     cn(
-                                        'rounded-[6px] px-2.5 py-1.5 text-xs font-medium transition-all duration-150 sm:px-3',
+                                        'shrink-0 rounded-[6px] px-2 py-1.5 text-xs font-medium whitespace-nowrap transition-all duration-150 sm:px-3',
                                         isActive
                                             ? 'bg-surface text-ink shadow-soft'
                                             : 'text-ink-soft hover:text-ink'
@@ -46,25 +45,6 @@ export function AppShell() {
                     </nav>
 
                     <ThemeToggle />
-
-                    <NavLink
-                        to="/sobre"
-                        title={`Sobre ${author.name}`}
-                        aria-label={`Sobre ${author.name}`}
-                        className={({ isActive }) =>
-                            cn(
-                                'shrink-0 cursor-pointer rounded-full ring-2 transition-all duration-150',
-                                isActive
-                                    ? 'ring-brand'
-                                    : 'ring-line hover:ring-brand/60 hover:brightness-105'
-                            )
-                        }
-                    >
-                        <AuthorAvatar
-                            className="size-8 rounded-full"
-                            fallbackClassName="text-[10px]"
-                        />
-                    </NavLink>
                 </div>
             </header>
 

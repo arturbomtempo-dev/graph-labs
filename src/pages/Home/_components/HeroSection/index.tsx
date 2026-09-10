@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, Sparkles } from 'lucide-react';
+import { ArrowRight, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/Button';
 
@@ -10,12 +10,7 @@ export function HeroSection() {
                 className="from-brand/12 pointer-events-none absolute inset-0 bg-gradient-to-br via-transparent to-transparent"
             />
             <div className="relative mx-auto w-full max-w-[1100px] px-4 py-16 sm:px-6 sm:py-24">
-                <span className="border-line bg-surface text-ink-soft inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium">
-                    <Sparkles size={12} className="text-brand" />
-                    Teoria dos grafos e computabilidade
-                </span>
-
-                <h1 className="text-ink mt-5 max-w-3xl text-3xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-5xl">
+                <h1 className="text-ink max-w-3xl text-3xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-5xl">
                     Monte o grafo, escolha o algoritmo e acompanhe cada passo da execução.
                 </h1>
 

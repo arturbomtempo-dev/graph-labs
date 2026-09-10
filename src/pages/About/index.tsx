@@ -5,7 +5,7 @@ import { Card, CardHeader } from '@/components/Card';
 import { algorithms } from '@/lib/algorithms';
 import { author } from '@/lib/author';
 import { presets } from '@/lib/graph/presets';
-import { ArrowRight, BookOpen, Code2, GraduationCap, ScrollText, Users } from 'lucide-react';
+import { ArrowRight, BookOpen, Code2, GraduationCap, ScrollText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const credentials = [
@@ -50,12 +50,11 @@ export function About() {
                         />
 
                         <div className="min-w-0">
-                            <span className="border-line bg-surface text-ink-soft inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium">
-                                <Users size={12} className="text-brand" />
+                            <p className="text-ink-faint text-[11px] font-semibold tracking-wider uppercase">
                                 Sobre o autor
-                            </span>
+                            </p>
 
-                            <h1 className="text-ink mt-4 text-3xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-4xl">
+                            <h1 className="text-ink mt-3 text-3xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-4xl">
                                 {author.name}
                             </h1>
 

@@ -122,12 +122,12 @@ export function About() {
                     <Card>
                         <CardHeader
                             title="Por que o Graph Labs existe"
-                            description="Da monitoria para a sala de aula."
+                            description="Para estudar os algoritmos e conferir exercícios."
                         />
                         <div className="flex flex-col gap-4 p-5">
                             <p className="text-ink-soft text-[13px] leading-relaxed">
                                 Na monitoria de Teoria dos Grafos da {author.institution}, no{' '}
-                                {author.term}, desenvolvi o Graph Labs para ajudar meus alunos a
+                                {author.term}, desenvolvi o Graph Labs para ajudar os alunos a
                                 compreender e revisar os principais algoritmos de grafos vistos na
                                 disciplina.
                             </p>
@@ -136,8 +136,14 @@ export function About() {
                                 A ideia nasceu de uma dificuldade recorrente no atendimento: o
                                 pseudocódigo no papel esconde o que de fato acontece a cada
                                 iteração. Aqui cada método executa passo a passo sobre o grafo que o
-                                aluno desenhou, exibindo as mesmas tabelas, filas e notação usadas
-                                em sala, com a justificativa de cada decisão.
+                                próprio aluno desenhou, exibindo as mesmas tabelas, filas e notação
+                                usadas em sala, com a justificativa de cada decisão.
+                            </p>
+
+                            <p className="text-ink-soft text-[13px] leading-relaxed">
+                                Na prática, dá para remontar o grafo de um exercício da lista,
+                                executar o método sobre ele e comparar cada passo com o que você
+                                resolveu no papel.
                             </p>
 
                             <dl className="border-line grid grid-cols-3 gap-3 border-t pt-4">
@@ -159,11 +165,11 @@ export function About() {
                 <div className="border-line bg-surface-sunken/50 mt-4 flex flex-col gap-4 rounded-card border p-5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                         <h2 className="text-ink text-sm font-semibold tracking-tight">
-                            Feito para ser usado em sala
+                            Feito para estudar e conferir exercícios
                         </h2>
                         <p className="text-ink-soft mt-1 text-xs leading-relaxed">
-                            Monte um grafo do zero ou carregue um dos exemplos e acompanhe a
-                            execução.
+                            Monte o grafo do seu exercício ou carregue um dos exemplos e confira
+                            cada passo da execução.
                         </p>
                     </div>
                     <div className="flex shrink-0 flex-col gap-2.5 sm:flex-row">

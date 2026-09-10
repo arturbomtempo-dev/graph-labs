@@ -40,7 +40,7 @@ export function Button({
     return (
         <button
             className={cn(
-                'inline-flex shrink-0 items-center justify-center rounded-lg font-medium transition-all duration-150',
+                'inline-flex shrink-0 cursor-pointer items-center justify-center rounded-lg font-medium transition-all duration-150',
                 'disabled:pointer-events-none disabled:opacity-40',
                 variantClasses[variant],
                 sizeClasses[size],

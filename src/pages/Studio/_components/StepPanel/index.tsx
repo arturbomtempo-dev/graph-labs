@@ -157,7 +157,7 @@ export function StepPanel({
                                     key={speed.value}
                                     onClick={() => onIntervalChange(speed.value)}
                                     className={cn(
-                                        'flex-1 rounded-[6px] py-1 text-[11px] font-medium transition-all',
+                                        'flex-1 cursor-pointer rounded-[6px] py-1 text-[11px] font-medium transition-all',
                                         interval === speed.value
                                             ? 'bg-surface text-ink shadow-soft'
                                             : 'text-ink-soft hover:text-ink'

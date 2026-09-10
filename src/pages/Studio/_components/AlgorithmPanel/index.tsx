@@ -81,7 +81,7 @@ export function AlgorithmPanel({
                                             key={algorithm.id}
                                             onClick={() => onSelectAlgorithm(algorithm.id)}
                                             className={cn(
-                                                'rounded-lg border px-3 py-2.5 text-left transition-all',
+                                                'cursor-pointer rounded-lg border px-3 py-2.5 text-left transition-all',
                                                 isSelected
                                                     ? 'border-brand bg-brand/8'
                                                     : 'border-line hover:border-line-strong hover:bg-surface-sunken'

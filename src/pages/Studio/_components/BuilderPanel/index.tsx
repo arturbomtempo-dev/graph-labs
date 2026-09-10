@@ -97,7 +97,7 @@ export function BuilderPanel({
                         <button
                             key={preset.id}
                             onClick={() => onLoadPreset(preset.id)}
-                            className="border-line hover:border-brand hover:bg-brand/5 group rounded-lg border px-3 py-2.5 text-left transition-all"
+                            className="border-line hover:border-brand hover:bg-brand/5 group cursor-pointer rounded-lg border px-3 py-2.5 text-left transition-all"
                         >
                             <p className="text-ink group-hover:text-brand text-xs font-semibold transition-colors">
                                 {preset.name}
@@ -145,7 +145,7 @@ export function BuilderPanel({
                             >
                                 <button
                                     onClick={() => onSelectNode(node.id)}
-                                    className="border-line bg-surface-sunken text-ink flex size-7 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold"
+                                    className="border-line bg-surface-sunken text-ink flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full border text-[11px] font-semibold"
                                 >
                                     {node.label.slice(0, 2)}
                                 </button>
@@ -216,7 +216,7 @@ export function BuilderPanel({
                                 <button
                                     onClick={() => setDirected(false)}
                                     className={cn(
-                                        'flex flex-1 items-center justify-center gap-1 rounded-[6px] text-[11px] font-medium transition-all',
+                                        'flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-[6px] text-[11px] font-medium transition-all',
                                         !directed
                                             ? 'bg-surface text-ink shadow-soft'
                                             : 'text-ink-soft hover:text-ink'
@@ -227,13 +227,13 @@ export function BuilderPanel({
                                 <button
                                     onClick={() => setDirected(true)}
                                     className={cn(
-                                        'flex flex-1 items-center justify-center gap-1 rounded-[6px] text-[11px] font-medium transition-all',
+                                        'flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-[6px] text-[11px] font-medium transition-all',
                                         directed
                                             ? 'bg-surface text-ink shadow-soft'
                                             : 'text-ink-soft hover:text-ink'
                                     )}
                                 >
-                                    <ArrowRight size={13} /> Dirigida
+                                    <ArrowRight size={13} /> Direcionada
                                 </button>
                             </div>
                         </div>
@@ -299,7 +299,7 @@ export function BuilderPanel({
                             >
                                 <button
                                     onClick={() => onSelectEdge(edge.id)}
-                                    className="text-ink flex min-w-0 flex-1 items-center gap-1.5 text-left text-xs font-medium"
+                                    className="text-ink flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 text-left text-xs font-medium"
                                 >
                                     <span className="truncate">{labelOf(edge.source)}</span>
                                     <span className="text-ink-faint shrink-0">
@@ -330,7 +330,7 @@ export function BuilderPanel({
                                         onUpdateEdge(edge.id, { directed: !edge.directed })
                                     }
                                     title="Alternar direção"
-                                    className="shrink-0"
+                                    className="shrink-0 cursor-pointer"
                                 >
                                     <Badge tone={edge.directed ? 'brand' : 'neutral'}>
                                         {edge.directed ? 'direcionada' : 'simples'}

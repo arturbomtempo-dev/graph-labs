@@ -42,7 +42,7 @@ export function VisitOrderPicker({ graph, order, onChange, rootLabel }: VisitOrd
                             onClick={() => onChange(chosen.filter((item) => item !== id))}
                             title="Remover da sequência"
                             className={cn(
-                                'flex items-center gap-1 rounded-md px-1.5 py-1 font-mono text-[11px] font-semibold transition-colors',
+                                'flex cursor-pointer items-center gap-1 rounded-md px-1.5 py-1 font-mono text-[11px] font-semibold transition-colors',
                                 index === 0
                                     ? 'bg-brand text-brand-ink'
                                     : 'bg-surface text-ink border-line border'
@@ -62,7 +62,7 @@ export function VisitOrderPicker({ graph, order, onChange, rootLabel }: VisitOrd
                             key={node.id}
                             onClick={() => onChange([...chosen, node.id])}
                             title="Acrescentar à sequência"
-                            className="border-line bg-surface text-ink-soft hover:border-brand hover:text-ink rounded-md border px-1.5 py-1 font-mono text-[11px] transition-colors"
+                            className="border-line bg-surface text-ink-soft hover:border-brand hover:text-ink cursor-pointer rounded-md border px-1.5 py-1 font-mono text-[11px] transition-colors"
                         >
                             {node.label}
                         </button>

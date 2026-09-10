@@ -33,7 +33,7 @@ export function IconButton({
             title={label}
             aria-pressed={active}
             className={cn(
-                'inline-flex shrink-0 items-center justify-center rounded-lg transition-all duration-150',
+                'inline-flex shrink-0 cursor-pointer items-center justify-center rounded-lg transition-all duration-150',
                 'disabled:pointer-events-none disabled:opacity-40',
                 size === 'sm' ? 'size-8' : 'size-10',
                 variantClasses[variant],

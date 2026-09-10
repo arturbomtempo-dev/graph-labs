@@ -37,7 +37,7 @@ export function SegmentedControl<T extends string>({
                     aria-selected={value === option.value}
                     onClick={() => onChange(option.value)}
                     className={cn(
-                        'flex flex-1 items-center justify-center gap-1.5 rounded-[6px] font-medium transition-all duration-150',
+                        'flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[6px] font-medium transition-all duration-150',
                         size === 'sm' ? 'h-7 px-2 text-[11px]' : 'h-9 px-3 text-xs',
                         value === option.value
                             ? 'bg-surface text-ink shadow-soft'

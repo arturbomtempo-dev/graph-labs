@@ -1,7 +1,9 @@
 import { Footer } from '@/components/Footer';
+import { IconButton } from '@/components/IconButton';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { cn } from '@/lib/utils/cn';
-import { Waypoints } from 'lucide-react';
+import { Menu, Waypoints, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 
 const navigation = [
@@ -14,6 +16,16 @@ const navigation = [
 export function AppShell() {
     const { pathname } = useLocation();
     const isStudio = pathname.startsWith('/estudio');
+    const [menuOpen, setMenuOpen] = useState(false);
+
+    useEffect(() => {
+        if (!menuOpen) return;
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setMenuOpen(false);
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [menuOpen]);
 
     return (
         <div className="flex min-h-dvh flex-col">
@@ -23,12 +35,12 @@ export function AppShell() {
                         <span className="bg-brand text-brand-ink flex size-7 items-center justify-center rounded-lg">
                             <Waypoints size={16} />
                         </span>
-                        <span className="text-ink hidden text-sm font-semibold tracking-tight sm:block">
+                        <span className="text-ink text-sm font-semibold tracking-tight">
                             Graph Labs
                         </span>
                     </NavLink>
 
-                    <nav className="bg-surface-sunken border-line no-scrollbar ml-auto flex min-w-0 items-center gap-0.5 overflow-x-auto rounded-lg border p-0.5">
+                    <nav className="bg-surface-sunken border-line ml-auto hidden items-center gap-0.5 rounded-lg border p-0.5 md:flex">
                         {navigation.map((item) => (
                             <NavLink
                                 key={item.to}
@@ -36,7 +48,7 @@ export function AppShell() {
                                 end={item.end}
                                 className={({ isActive }) =>
                                     cn(
-                                        'shrink-0 rounded-[6px] px-2 py-1.5 text-xs font-medium whitespace-nowrap transition-all duration-150 sm:px-3',
+                                        'shrink-0 rounded-[6px] px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all duration-150',
                                         isActive
                                             ? 'bg-surface text-ink shadow-soft'
                                             : 'text-ink-soft hover:text-ink'
@@ -48,9 +60,58 @@ export function AppShell() {
                         ))}
                     </nav>
 
-                    <ThemeToggle />
+                    <div className="ml-auto flex items-center gap-0.5 md:ml-0">
+                        <ThemeToggle />
+                        <IconButton
+                            className="md:hidden"
+                            size="sm"
+                            label={menuOpen ? 'Fechar menu' : 'Abrir menu'}
+                            aria-expanded={menuOpen}
+                            aria-controls="menu-mobile"
+                            icon={menuOpen ? <X size={17} /> : <Menu size={17} />}
+                            onClick={() => setMenuOpen((open) => !open)}
+                        />
+                    </div>
                 </div>
+
+                {menuOpen ? (
+                    <nav
+                        id="menu-mobile"
+                        className="border-line bg-surface shadow-pop absolute inset-x-0 top-14 border-b py-2 md:hidden"
+                    >
+                        <ul className="mx-auto flex w-full max-w-[1600px] flex-col gap-0.5 px-1 sm:px-3">
+                            {navigation.map((item) => (
+                                <li key={item.to}>
+                                    <NavLink
+                                        to={item.to}
+                                        end={item.end}
+                                        onClick={() => setMenuOpen(false)}
+                                        className={({ isActive }) =>
+                                            cn(
+                                                'block rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150',
+                                                isActive
+                                                    ? 'bg-brand/10 text-brand'
+                                                    : 'text-ink-soft hover:bg-surface-sunken hover:text-ink'
+                                            )
+                                        }
+                                    >
+                                        {item.label}
+                                    </NavLink>
+                                </li>
+                            ))}
+                        </ul>
+                    </nav>
+                ) : null}
             </header>
+
+            {menuOpen ? (
+                <button
+                    aria-hidden
+                    tabIndex={-1}
+                    onClick={() => setMenuOpen(false)}
+                    className="bg-ink/20 fixed inset-0 top-14 z-20 cursor-default md:hidden"
+                />
+            ) : null}
 
             <main className="flex flex-1 flex-col">
                 <Outlet />

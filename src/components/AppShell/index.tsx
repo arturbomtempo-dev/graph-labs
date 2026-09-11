@@ -74,44 +74,51 @@ export function AppShell() {
                     </div>
                 </div>
 
-                {menuOpen ? (
-                    <nav
-                        id="menu-mobile"
-                        className="border-line bg-surface shadow-pop absolute inset-x-0 top-14 border-b py-2 md:hidden"
-                    >
-                        <ul className="mx-auto flex w-full max-w-[1600px] flex-col gap-0.5 px-1 sm:px-3">
-                            {navigation.map((item) => (
-                                <li key={item.to}>
-                                    <NavLink
-                                        to={item.to}
-                                        end={item.end}
-                                        onClick={() => setMenuOpen(false)}
-                                        className={({ isActive }) =>
-                                            cn(
-                                                'block rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150',
-                                                isActive
-                                                    ? 'bg-brand/10 text-brand'
-                                                    : 'text-ink-soft hover:bg-surface-sunken hover:text-ink'
-                                            )
-                                        }
-                                    >
-                                        {item.label}
-                                    </NavLink>
-                                </li>
-                            ))}
-                        </ul>
-                    </nav>
-                ) : null}
+                <nav
+                    id="menu-mobile"
+                    inert={!menuOpen}
+                    className={cn(
+                        'border-line bg-surface shadow-pop absolute inset-x-0 top-14 border-b py-2 md:hidden',
+                        'transition-[opacity,translate] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none',
+                        menuOpen
+                            ? 'translate-y-0 opacity-100'
+                            : 'pointer-events-none -translate-y-3 opacity-0'
+                    )}
+                >
+                    <ul className="mx-auto flex w-full max-w-[1600px] flex-col gap-0.5 px-1 sm:px-3">
+                        {navigation.map((item) => (
+                            <li key={item.to}>
+                                <NavLink
+                                    to={item.to}
+                                    end={item.end}
+                                    onClick={() => setMenuOpen(false)}
+                                    className={({ isActive }) =>
+                                        cn(
+                                            'block rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150',
+                                            isActive
+                                                ? 'bg-brand/10 text-brand'
+                                                : 'text-ink-soft hover:bg-surface-sunken hover:text-ink'
+                                        )
+                                    }
+                                >
+                                    {item.label}
+                                </NavLink>
+                            </li>
+                        ))}
+                    </ul>
+                </nav>
             </header>
 
-            {menuOpen ? (
-                <button
-                    aria-hidden
-                    tabIndex={-1}
-                    onClick={() => setMenuOpen(false)}
-                    className="bg-ink/20 fixed inset-0 top-14 z-20 cursor-default md:hidden"
-                />
-            ) : null}
+            <button
+                aria-hidden
+                tabIndex={-1}
+                inert={!menuOpen}
+                onClick={() => setMenuOpen(false)}
+                className={cn(
+                    'bg-ink/20 fixed inset-0 top-14 z-20 cursor-default transition-opacity duration-300 ease-out motion-reduce:transition-none md:hidden',
+                    menuOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
+                )}
+            />
 
             <main className="flex flex-1 flex-col">
                 <Outlet />

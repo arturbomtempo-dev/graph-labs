@@ -10,9 +10,6 @@
   <b>Graph Labs</b> is a visual <b>graph theory</b> laboratory: you draw the graph directly on the canvas, pick one of the <b>17 classic algorithms</b> implemented, and follow the execution <i>step by step</i>, with the same <i>tables</i>, <i>queues</i> and <i>notation</i> used in the classroom. Every iteration comes with the reasoning behind the decision that was made, turning static pseudocode on paper into something you can inspect, pause and replay at whatever speed you want. The project was born in the graph theory teaching assistantship at PUC Minas to solve a recurring difficulty in office hours: understanding what actually happens at each step of an algorithm. In practice, you can rebuild the graph from a homework exercise, run the method on it, and check every step against what you solved by hand. Everything runs in the browser, with no back-end, no database and no sign-up.
 </div>
 
-> [!NOTE]
-> The application interface is written in **Brazilian Portuguese**, since it was built as classroom support material. This documentation is in English, and the algorithms, notation and structures are language independent.
-
 ---
 
 ## 🚧 Project Status
@@ -109,22 +106,22 @@ What makes the project relevant is its fidelity to the course: the notation, alg
 
 ## ✨ Key Features
 
-- 🖊️ **Canvas graph editor:** add vertices, connect pairs, drag to reposition and delete elements using dedicated tools (select, add, connect and erase).
-- 🔀 **Directed and undirected edges:** set the default orientation for new edges and flip the direction of any existing one.
-- ⚖️ **Optional weights:** assign weights to edges when the algorithm requires them, or work with simple unweighted graphs.
-- 🧮 **17 classic algorithms:** traversal, connectivity, Eulerian graphs, minimum spanning tree, shortest path, maximum flow, topological sorting, matching and coloring.
-- ⏯️ **Step by step execution:** move forward one step at a time, go back, jump to the first or last step, or play automatically at 0.5×, 1×, 2× and 4× speed.
-- 📊 **Classroom faithful tracking:** each step shows the label tables, the auxiliary queues, stacks and sets, plus metrics describing the current state.
-- 🎯 **Reasoning for every iteration:** each step is described in text, explaining why that vertex or edge was chosen.
-- ✅ **Final conclusions:** once the run finishes, the algorithm presents its consolidated result (spanning tree, path cost, flow value, topological order, number of colors, and so on).
-- 🧩 **12 sample graphs:** ready made models covering every area of the course, including a Welsh-Powell counterexample.
-- 🚦 **Per algorithm validation:** before running, the app checks the algorithm constraints (directed graph, non negative weights, defined source and sink) and explains what needs to be fixed.
-- 📖 **Pseudocode page:** core idea, annotated pseudocode, maintained invariant and common pitfalls for each method, filterable by category.
-- ↩️ **Undo and redo:** up to 60 graph states in history, with keyboard shortcuts.
-- 🧭 **Automatic layout:** repositions vertices to keep the drawing readable as the graph grows.
-- 💾 **Local persistence:** the graph, the layout preference and the theme are stored in the browser and are still there when you reopen the page.
-- 🌗 **Light and dark themes:** follows the system preference and allows manual switching.
-- 📱 **Responsive layout:** works on desktop screens and mobile devices.
+- **Canvas graph editor:** add vertices, connect pairs, drag to reposition and delete elements using dedicated tools (select, add, connect and erase).
+- **Directed and undirected edges:** set the default orientation for new edges and flip the direction of any existing one.
+- **Optional weights:** assign weights to edges when the algorithm requires them, or work with simple unweighted graphs.
+- **17 classic algorithms:** traversal, connectivity, Eulerian graphs, minimum spanning tree, shortest path, maximum flow, topological sorting, matching and coloring.
+- **Step by step execution:** move forward one step at a time, go back, jump to the first or last step, or play automatically at 0.5×, 1×, 2× and 4× speed.
+- **Classroom faithful tracking:** each step shows the label tables, the auxiliary queues, stacks and sets, plus metrics describing the current state.
+- **Reasoning for every iteration:** each step is described in text, explaining why that vertex or edge was chosen.
+- **Final conclusions:** once the run finishes, the algorithm presents its consolidated result (spanning tree, path cost, flow value, topological order, number of colors, and so on).
+- **12 sample graphs:** ready made models covering every area of the course, including a Welsh-Powell counterexample.
+- **Per algorithm validation:** before running, the app checks the algorithm constraints (directed graph, non negative weights, defined source and sink) and explains what needs to be fixed.
+- **Pseudocode page:** core idea, annotated pseudocode, maintained invariant and common pitfalls for each method, filterable by category.
+- **Undo and redo:** up to 60 graph states in history, with keyboard shortcuts.
+- **Automatic layout:** repositions vertices to keep the drawing readable as the graph grows.
+- **Local persistence:** the graph, the layout preference and the theme are stored in the browser and are still there when you reopen the page.
+- **Light and dark themes:** follows the system preference and allows manual switching.
+- **Responsive layout:** works on desktop screens and mobile devices.
 
 ---
 
@@ -280,9 +277,6 @@ Each `AlgorithmStep` carries the visual state of vertices and edges (`idle`, `fr
 - **Node.js:** version **20 or higher** (the latest LTS release is recommended).
 - **Package manager:** npm, yarn or pnpm.
 - **Git:** to clone the repository.
-
-> [!TIP]
-> There is no need to install Docker, a database or any additional runtime. This is a pure front-end application.
 
 ### Installation
 
@@ -563,9 +557,3 @@ Contributions are welcome, especially new algorithm implementations, notation fi
 This project is distributed under the **MIT License**, which permits use, copying, modification and distribution, including for academic and commercial purposes, as long as the copyright notice is preserved.
 
 The full text is available in the [LICENSE.md](LICENSE.md) file.
-
----
-
-<div align="center">
-  Built by <a href="https://arturbomtempo.dev">Artur Bomtempo Colen</a>
-</div>

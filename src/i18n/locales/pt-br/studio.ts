@@ -2,6 +2,7 @@ import type { Dictionary } from '@/i18n/dictionaries';
 import { plural } from '@/i18n/format';
 
 export const studio: Dictionary['studio'] = {
+    loading: 'Carregando o estúdio…',
     tabs: {
         build: 'Construir',
         run: 'Executar',

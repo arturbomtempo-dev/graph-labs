@@ -7,12 +7,12 @@ import { sortedNodes } from '@/lib/graph/helpers';
 import type { AlgorithmId, NodeId } from '@/lib/graph/types';
 import { Hammer, ListChecks, Play } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { AlgorithmPanel } from './_components/AlgorithmPanel';
-import { BuilderPanel } from './_components/BuilderPanel';
-import { CanvasLegend } from './_components/CanvasLegend';
-import { GraphCanvas, type CanvasTool } from './_components/GraphCanvas';
-import { GraphToolbar } from './_components/GraphToolbar';
-import { StepPanel } from './_components/StepPanel';
+import { AlgorithmPanel } from '../AlgorithmPanel';
+import { BuilderPanel } from '../BuilderPanel';
+import { CanvasLegend } from '../CanvasLegend';
+import { GraphCanvas, type CanvasTool } from '../GraphCanvas';
+import { GraphToolbar } from '../GraphToolbar';
+import { StepPanel } from '../StepPanel';
 
 type StudioTab = 'build' | 'run' | 'steps';
 
@@ -22,10 +22,10 @@ const tabIcons: Record<StudioTab, ReactNode> = {
     steps: <ListChecks size={13} />,
 };
 
-export function Studio() {
+export function Workspace() {
     const { t, locale } = useI18n();
     const editor = useGraphEditor();
-    const runner = useAlgorithmRunner();
+    const runner = useAlgorithmRunner(locale);
 
     const [tool, setTool] = useState<CanvasTool>('select');
     const [tab, setTab] = useState<StudioTab>('build');

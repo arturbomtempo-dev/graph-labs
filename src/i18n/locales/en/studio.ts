@@ -1,6 +1,7 @@
 import { plural } from '@/i18n/format';
 
 export const studio = {
+    loading: 'Loading the studio…',
     tabs: {
         build: 'Build',
         run: 'Run',

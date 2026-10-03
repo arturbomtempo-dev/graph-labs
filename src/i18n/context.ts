@@ -6,7 +6,7 @@ export interface I18nValue {
     locale: Locale;
     t: Dictionary;
     path: (route: RouteKey, hash?: string) => string;
-    changeLocale: (locale: Locale) => void;
+    changeLocale: (locale: Locale) => Promise<void>;
     formatNumber: (value: number) => string;
 }
 

@@ -7,7 +7,7 @@ export function Footer() {
     return (
         <footer className="border-line bg-surface-sunken/40 border-t">
             <div className="mx-auto flex w-full max-w-275 flex-col items-center gap-1.5 px-4 py-6 sm:flex-row sm:justify-between sm:gap-4 sm:px-6">
-                <p className="text-ink-faint text-xs">
+                <p className="text-ink-faint text-xs" suppressHydrationWarning>
                     {t.shell.footer.rights(new Date().getFullYear())}
                 </p>
 

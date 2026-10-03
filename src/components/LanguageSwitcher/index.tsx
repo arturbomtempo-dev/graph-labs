@@ -1,5 +1,6 @@
 import { useI18n } from '@/hooks/useI18n';
 import { localeSettings, locales } from '@/i18n/config';
+import { loadDictionary } from '@/i18n/dictionaries';
 import { cn } from '@/lib/utils/cn';
 import { Check, Languages } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
@@ -35,6 +36,8 @@ export function LanguageSwitcher() {
                 aria-haspopup="menu"
                 aria-expanded={open}
                 aria-controls={menuId}
+                onPointerEnter={() => locales.forEach((option) => void loadDictionary(option))}
+                onFocus={() => locales.forEach((option) => void loadDictionary(option))}
                 onClick={() => setOpen((current) => !current)}
                 className={cn(
                     'text-ink-soft hover:bg-surface-sunken hover:text-ink flex h-8 cursor-pointer items-center gap-1.5 rounded-lg px-2 text-xs font-medium transition-colors duration-150',
@@ -70,7 +73,7 @@ export function LanguageSwitcher() {
                             lang={localeSettings[option].htmlLang}
                             onClick={() => {
                                 setOpen(false);
-                                changeLocale(option);
+                                void changeLocale(option);
                             }}
                             className={cn(
                                 'flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] transition-colors',

@@ -1,3 +1,4 @@
+import type { Locale } from '@/i18n/config';
 import { getDictionary } from '@/i18n/dictionaries';
 import type { AlgorithmContext, AlgorithmDefinition, AlgorithmTrace } from '@/lib/graph/types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -10,19 +11,26 @@ export const playbackSpeeds = [
 ];
 
 interface RunState {
-    algorithmId: string;
+    algorithm: AlgorithmDefinition;
+    context: AlgorithmContext;
     trace: AlgorithmTrace;
 }
 
-export function useAlgorithmRunner() {
+export function useAlgorithmRunner(locale: Locale) {
     const [run, setRun] = useState<RunState | null>(null);
     const [stepIndex, setStepIndex] = useState(0);
     const [playRequested, setPlayRequested] = useState(false);
     const [interval, setIntervalValue] = useState(800);
     const [error, setError] = useState<string | null>(null);
 
-    const totalSteps = run?.trace.steps.length ?? 0;
-    const currentStep = run?.trace.steps[stepIndex] ?? null;
+    const trace = useMemo(() => {
+        if (!run) return null;
+        if (run.context.locale === locale) return run.trace;
+        return run.algorithm.run({ ...run.context, locale });
+    }, [run, locale]);
+
+    const totalSteps = trace?.steps.length ?? 0;
+    const currentStep = trace?.steps[stepIndex] ?? null;
     const isFinished = totalSteps > 0 && stepIndex >= totalSteps - 1;
     const isPlaying = playRequested && totalSteps > 0 && !isFinished;
 
@@ -40,7 +48,7 @@ export function useAlgorithmRunner() {
         }
         try {
             const trace = algorithm.run(context);
-            setRun({ algorithmId: algorithm.id, trace });
+            setRun({ algorithm, context, trace });
             setStepIndex(0);
             setPlayRequested(false);
             setError(null);
@@ -98,8 +106,7 @@ export function useAlgorithmRunner() {
     );
 
     return {
-        run,
-        trace: run?.trace ?? null,
+        trace,
         stepIndex,
         totalSteps,
         currentStep,

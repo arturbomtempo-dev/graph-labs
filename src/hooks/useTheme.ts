@@ -1,26 +1,40 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
+import { DARK_THEME_CLASS, THEME_STORAGE_KEY, type Theme } from '@/lib/theme';
 
-type Theme = 'light' | 'dark';
+const listeners = new Set<() => void>();
 
-const STORAGE_KEY = 'graph-labs-theme';
+function subscribe(listener: () => void) {
+    listeners.add(listener);
+    return () => {
+        listeners.delete(listener);
+    };
+}
 
-function readInitialTheme(): Theme {
-    if (typeof window === 'undefined') return 'light';
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored === 'light' || stored === 'dark') return stored;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+function readTheme(): Theme {
+    return document.documentElement.classList.contains(DARK_THEME_CLASS) ? 'dark' : 'light';
+}
+
+function readServerTheme(): Theme {
+    return 'light';
+}
+
+function persistTheme(theme: Theme): boolean {
+    try {
+        window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 export function useTheme() {
-    const [theme, setTheme] = useState<Theme>(readInitialTheme);
-
-    useEffect(() => {
-        document.documentElement.classList.toggle('dark', theme === 'dark');
-        window.localStorage.setItem(STORAGE_KEY, theme);
-    }, [theme]);
+    const theme = useSyncExternalStore(subscribe, readTheme, readServerTheme);
 
     const toggleTheme = useCallback(() => {
-        setTheme((current) => (current === 'dark' ? 'light' : 'dark'));
+        const next: Theme = readTheme() === 'dark' ? 'light' : 'dark';
+        document.documentElement.classList.toggle(DARK_THEME_CLASS, next === 'dark');
+        persistTheme(next);
+        listeners.forEach((listener) => listener());
     }, []);
 
     return { theme, toggleTheme };

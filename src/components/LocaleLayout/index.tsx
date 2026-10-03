@@ -1,41 +1,65 @@
 import { AppShell } from '@/components/AppShell';
+import { NotFound } from '@/pages/NotFound';
 import {
     defaultLocale,
     localeSettings,
     localizedPath,
+    prefixedLocales,
     readStoredLocale,
+    routeFromPath,
     storeLocale,
     translatePath,
     type Locale,
     type RouteKey,
 } from '@/i18n/config';
 import { I18nContext, type I18nValue } from '@/i18n/context';
-import { getDictionary } from '@/i18n/dictionaries';
-import { useCallback, useEffect, useMemo } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { getDictionary, hasDictionary, loadDictionary } from '@/i18n/dictionaries';
+import { applyPageHead, createPageHead } from '@/i18n/seo';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
-interface LocaleLayoutProps {
-    locale: Locale;
+function resolveSegment(segment: string | undefined): { locale: Locale; valid: boolean } {
+    if (segment === undefined) return { locale: defaultLocale, valid: true };
+    const locale = prefixedLocales.find((candidate) => candidate === segment);
+    return locale ? { locale, valid: true } : { locale: defaultLocale, valid: false };
 }
 
-export function LocaleLayout({ locale }: LocaleLayoutProps) {
+export function LocaleLayout() {
+    const { locale: segment } = useParams();
     const { pathname, search, hash } = useLocation();
     const navigate = useNavigate();
-    const storedLocale = readStoredLocale();
+    const { locale: requestedLocale, valid } = resolveSegment(segment);
+
+    const [readyLocale, setReadyLocale] = useState<Locale>(requestedLocale);
+    const locale = hasDictionary(requestedLocale) ? requestedLocale : readyLocale;
     const t = getDictionary(locale);
+    const page = valid ? (routeFromPath(pathname) ?? 'notFound') : 'notFound';
 
     useEffect(() => {
-        document.documentElement.lang = localeSettings[locale].htmlLang;
-        document.title = t.shell.meta.title;
-        document
-            .querySelector('meta[name="description"]')
-            ?.setAttribute('content', t.shell.meta.description);
-    }, [locale, t]);
+        let active = true;
+        loadDictionary(requestedLocale).then(() => {
+            if (active) setReadyLocale(requestedLocale);
+        });
+        return () => {
+            active = false;
+        };
+    }, [requestedLocale]);
+
+    useEffect(() => {
+        const stored = readStoredLocale();
+        if (requestedLocale !== defaultLocale || !stored || stored === defaultLocale) return;
+        navigate(`${translatePath(pathname, stored)}${search}${hash}`, { replace: true });
+    }, [requestedLocale, navigate, pathname, search, hash]);
+
+    useEffect(() => {
+        applyPageHead(createPageHead(locale, page, t));
+    }, [locale, page, t]);
 
     const changeLocale = useCallback(
-        (next: Locale) => {
+        async (next: Locale) => {
             storeLocale(next);
             if (next === locale) return;
+            await loadDictionary(next);
             navigate(`${translatePath(pathname, next)}${search}${hash}`);
         },
         [locale, navigate, pathname, search, hash]
@@ -52,13 +76,9 @@ export function LocaleLayout({ locale }: LocaleLayoutProps) {
         };
     }, [locale, t, changeLocale]);
 
-    if (locale === defaultLocale && storedLocale && storedLocale !== defaultLocale) {
-        return <Navigate to={`${translatePath(pathname, storedLocale)}${search}${hash}`} replace />;
-    }
-
     return (
         <I18nContext.Provider value={value}>
-            <AppShell />
+            <AppShell>{valid ? undefined : <NotFound />}</AppShell>
         </I18nContext.Provider>
     );
 }

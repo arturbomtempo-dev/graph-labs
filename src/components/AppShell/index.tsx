@@ -6,12 +6,12 @@ import { useI18n } from '@/hooks/useI18n';
 import { routeFromPath, type RouteKey } from '@/i18n/config';
 import { cn } from '@/lib/utils/cn';
 import { Menu, Waypoints, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 
 const navigationRoutes: RouteKey[] = ['home', 'studio', 'algorithms', 'docs', 'about'];
 
-export function AppShell() {
+export function AppShell({ children }: { children?: ReactNode }) {
     const { t, path } = useI18n();
     const { pathname } = useLocation();
     const isStudio = routeFromPath(pathname) === 'studio';
@@ -131,7 +131,7 @@ export function AppShell() {
             />
 
             <main className="flex flex-1 flex-col">
-                <Outlet />
+                {children ?? <Outlet />}
             </main>
 
             {isStudio ? null : <Footer />}

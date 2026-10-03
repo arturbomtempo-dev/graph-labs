@@ -31,6 +31,15 @@ export const routeSlugs: Record<RouteKey, string> = {
 
 const routeKeys = Object.keys(routeSlugs) as RouteKey[];
 
+export const legacyRoutes: { path: string; route: RouteKey }[] = [
+    { path: '/estudio', route: 'studio' },
+    { path: '/algoritmos', route: 'algorithms' },
+    { path: '/documentacao', route: 'docs' },
+    { path: '/sobre', route: 'about' },
+];
+
+export const prefixedLocales = locales.filter((locale) => locale !== defaultLocale);
+
 export function isLocale(value: string | null): value is Locale {
     return locales.includes(value as Locale);
 }
@@ -49,10 +58,7 @@ export function localizedPath(locale: Locale, route: RouteKey, hash?: string): s
 
 export function localeFromPath(pathname: string): Locale {
     const [firstSegment] = pathname.split('/').filter(Boolean);
-    return (
-        locales.find((locale) => locale !== defaultLocale && locale === firstSegment) ??
-        defaultLocale
-    );
+    return prefixedLocales.find((locale) => locale === firstSegment) ?? defaultLocale;
 }
 
 function pathWithoutPrefix(pathname: string, locale: Locale): string {

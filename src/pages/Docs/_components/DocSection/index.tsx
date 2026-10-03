@@ -1,23 +1,21 @@
 import type { ReactNode } from 'react';
+import { useI18n } from '@/hooks/useI18n';
 import { cn } from '@/lib/utils/cn';
+import { sectionId, sectionIndex, type DocSectionKey } from '../../sections';
 
 interface DocSectionProps {
-    id: string;
-    index: number;
-    title: string;
+    section: DocSectionKey;
     description: string;
     children: ReactNode;
     className?: string;
 }
 
-export function DocSection({
-    id,
-    index,
-    title,
-    description,
-    children,
-    className,
-}: DocSectionProps) {
+export function DocSection({ section, description, children, className }: DocSectionProps) {
+    const { t } = useI18n();
+    const id = sectionId(section);
+    const index = sectionIndex(section);
+    const title = t.docs.sections[section];
+
     return (
         <section
             id={id}

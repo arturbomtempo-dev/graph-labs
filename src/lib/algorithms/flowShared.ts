@@ -6,8 +6,9 @@ import {
     orderedNodes,
     weightOf,
 } from '../graph/helpers';
+import type { Locale } from '@/i18n/config';
 import type { AlgorithmContext, Graph, NodeId, TraceTable } from '../graph/types';
-import { requireEdges, requireNodes } from './shared';
+import { requireEdges, requireNodes, traceText } from './shared';
 
 export const arcKey = (from: NodeId, to: NodeId) => `${from}>${to}`;
 
@@ -57,31 +58,29 @@ export function createResidualNetwork(graph: Graph, visitOrder?: NodeId[]): Resi
     };
 }
 
-export function flowNetworkErrors(context: AlgorithmContext, method: string): string[] {
+export function flowNetworkErrors(context: AlgorithmContext): string[] {
+    const issues = traceText(context.locale).flow.issues;
     const errors = [...requireNodes(context), ...requireEdges(context)];
-    if (!context.startId) errors.push('Selecione o vértice fonte s.');
-    if (!context.endId) errors.push('Selecione o vértice sumidouro t.');
+    if (!context.startId) errors.push(issues.selectSource);
+    if (!context.endId) errors.push(issues.selectSink);
     if (context.startId && context.startId === context.endId) {
-        errors.push('A fonte s e o sumidouro t precisam ser vértices diferentes.');
+        errors.push(issues.distinctEndpoints);
     }
-    if (hasUndirectedEdges(context.graph)) {
-        errors.push(
-            `Uma rede de fluxo é um grafo direcionado: converta todas as arestas para direcionadas antes de aplicar ${method}.`
-        );
-    }
+    if (hasUndirectedEdges(context.graph)) errors.push(issues.directedOnly);
     if (context.graph.edges.some((edge) => weightOf(edge) < 0)) {
-        errors.push('Em uma rede de fluxo, toda aresta tem capacidade u(e) > 0.');
+        errors.push(issues.positiveCapacity);
     }
     return errors;
 }
 
-export function residualTable(graph: Graph, network: ResidualNetwork): TraceTable {
+export function residualTable(graph: Graph, network: ResidualNetwork, locale: Locale): TraceTable {
     const labels = nodeLabelMap(graph);
+    const text = traceText(locale).flow.residualTable;
     return {
         id: 'residual',
-        title: 'Fluxo e capacidades residuais',
+        title: text.title,
         columns: [
-            { key: 'arc', label: 'Aresta e' },
+            { key: 'arc', label: text.edge },
             { key: 'flow', label: 'f(e)' },
             { key: 'capacityValue', label: 'u(e)' },
             { key: 'residualValue', label: 'u_r(e)' },

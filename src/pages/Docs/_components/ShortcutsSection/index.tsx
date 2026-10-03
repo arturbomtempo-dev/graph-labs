@@ -1,54 +1,51 @@
 import type { ReactNode } from 'react';
+import { useI18n } from '@/hooks/useI18n';
 import { Callout } from '../Callout';
 import { DocSection } from '../DocSection';
 import { Kbd } from '../Kbd';
 
-const shortcuts: { keys: ReactNode; action: string }[] = [
-    {
-        keys: (
-            <>
-                <Kbd>Ctrl</Kbd> <Kbd>Z</Kbd>
-                <span className="text-ink-faint text-xs">ou</span>
-                <Kbd>⌘</Kbd> <Kbd>Z</Kbd>
-            </>
-        ),
-        action: 'Desfaz a última alteração do grafo.',
-    },
-    {
-        keys: (
-            <>
-                <Kbd>Ctrl</Kbd> <Kbd>Shift</Kbd> <Kbd>Z</Kbd>
-                <span className="text-ink-faint text-xs">ou</span>
-                <Kbd>⌘</Kbd> <Kbd>Shift</Kbd> <Kbd>Z</Kbd>
-            </>
-        ),
-        action: 'Refaz a alteração desfeita.',
-    },
-    {
-        keys: (
-            <>
-                <Kbd>Delete</Kbd>
-                <span className="text-ink-faint text-xs">ou</span>
-                <Kbd>Backspace</Kbd>
-            </>
-        ),
-        action: 'Remove o vértice ou a aresta selecionada.',
-    },
-    {
-        keys: <Kbd>Esc</Kbd>,
-        action: 'Cancela a seleção ou a aresta que está sendo criada.',
-    },
-];
-
 export function ShortcutsSection() {
+    const { t } = useI18n();
+    const text = t.docs.shortcuts;
+    const or = <span className="text-ink-faint text-xs">{text.or}</span>;
+
+    const shortcuts: { keys: ReactNode; action: string }[] = [
+        {
+            keys: (
+                <>
+                    <Kbd>Ctrl</Kbd> <Kbd>Z</Kbd>
+                    {or}
+                    <Kbd>⌘</Kbd> <Kbd>Z</Kbd>
+                </>
+            ),
+            action: text.actions.undo,
+        },
+        {
+            keys: (
+                <>
+                    <Kbd>Ctrl</Kbd> <Kbd>Shift</Kbd> <Kbd>Z</Kbd>
+                    {or}
+                    <Kbd>⌘</Kbd> <Kbd>Shift</Kbd> <Kbd>Z</Kbd>
+                </>
+            ),
+            action: text.actions.redo,
+        },
+        {
+            keys: (
+                <>
+                    <Kbd>Delete</Kbd>
+                    {or}
+                    <Kbd>Backspace</Kbd>
+                </>
+            ),
+            action: text.actions.remove,
+        },
+        { keys: <Kbd>Esc</Kbd>, action: text.actions.cancel },
+    ];
+
     return (
-        <DocSection
-            id="atalhos"
-            index={9}
-            title="Atalhos de teclado"
-            description="Os atalhos funcionam em qualquer aba do estúdio e agilizam a edição do grafo."
-        >
-            <ul className="border-line bg-surface rounded-card divide-y divide-[var(--color-line)] border">
+        <DocSection section="shortcuts" description={text.description}>
+            <ul className="border-line bg-surface rounded-card divide-line divide-y border">
                 {shortcuts.map((shortcut) => (
                     <li
                         key={shortcut.action}
@@ -62,10 +59,7 @@ export function ShortcutsSection() {
                 ))}
             </ul>
 
-            <Callout tone="info">
-                Enquanto você digita em um campo de texto ou escolhe uma opção em uma lista, os
-                atalhos ficam desativados, para que apagar um caractere nunca remova um vértice.
-            </Callout>
+            <Callout tone="info">{text.note}</Callout>
         </DocSection>
     );
 }

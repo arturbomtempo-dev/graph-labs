@@ -8,6 +8,7 @@ import {
     type PointerEvent as ReactPointerEvent,
 } from 'react';
 import { IconButton } from '@/components/IconButton';
+import { useI18n } from '@/hooks/useI18n';
 import { hasWeight } from '@/lib/graph/helpers';
 import type { AlgorithmStep, ElementState, Graph, NodeId } from '@/lib/graph/types';
 import { cn } from '@/lib/utils/cn';
@@ -80,6 +81,7 @@ export function GraphCanvas({
     onNodeDragStart,
     onNodeDrag,
 }: GraphCanvasProps) {
+    const { t } = useI18n();
     const containerRef = useRef<HTMLDivElement>(null);
     const svgRef = useRef<SVGSVGElement>(null);
     const dragRef = useRef<DragState | null>(null);
@@ -569,21 +571,21 @@ export function GraphCanvas({
 
             <div className="absolute right-3 bottom-3 flex flex-col gap-1">
                 <IconButton
-                    label="Aproximar"
+                    label={t.studio.canvas.zoomIn}
                     variant="soft"
                     size="sm"
                     icon={<Plus size={15} />}
                     onClick={() => zoomBy(1.25)}
                 />
                 <IconButton
-                    label="Afastar"
+                    label={t.studio.canvas.zoomOut}
                     variant="soft"
                     size="sm"
                     icon={<Minus size={15} />}
                     onClick={() => zoomBy(0.8)}
                 />
                 <IconButton
-                    label="Enquadrar grafo"
+                    label={t.studio.canvas.fit}
                     variant="soft"
                     size="sm"
                     icon={<Maximize2 size={14} />}

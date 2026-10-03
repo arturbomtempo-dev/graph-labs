@@ -1,8 +1,12 @@
+import { Button } from '@/components/Button';
+import { useI18n } from '@/hooks/useI18n';
 import { ArrowRight, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/Button';
 
 export function HeroSection() {
+    const { t, path } = useI18n();
+    const text = t.home.hero;
+
     return (
         <section className="border-line relative overflow-hidden border-b">
             <div
@@ -11,25 +15,22 @@ export function HeroSection() {
             />
             <div className="relative mx-auto w-full max-w-275 px-4 py-16 sm:px-6 sm:py-24">
                 <h1 className="text-ink max-w-3xl text-3xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-5xl">
-                    Monte o grafo, escolha o algoritmo e acompanhe cada passo da execução.
+                    {text.title}
                 </h1>
 
                 <p className="text-ink-soft mt-4 max-w-2xl text-sm leading-relaxed text-pretty sm:text-base">
-                    Um laboratório visual para aulas e monitorias. Desenhe vértices e arestas
-                    direcionadas ou não direcionadas, defina pesos e execute os métodos clássicos da
-                    disciplina na mesma notação usada em sala, com tabelas, filas e a justificativa
-                    de cada iteração.
+                    {text.description}
                 </p>
 
                 <div className="mt-8 flex flex-wrap gap-2.5">
-                    <Link to="/estudio">
+                    <Link to={path('studio')}>
                         <Button variant="primary" size="lg" trailingIcon={<ArrowRight size={16} />}>
-                            Abrir o estúdio
+                            {text.openStudio}
                         </Button>
                     </Link>
-                    <Link to="/algoritmos">
+                    <Link to={path('algorithms')}>
                         <Button size="lg" icon={<BookOpen size={16} />}>
-                            Ver pseudocódigos
+                            {text.viewPseudocode}
                         </Button>
                     </Link>
                 </div>

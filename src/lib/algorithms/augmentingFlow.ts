@@ -1,3 +1,4 @@
+import type { Locale } from '@/i18n/config';
 import { formatWeight, nodeLabelMap, weightOf } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmTrace, Graph, NodeId } from '../graph/types';
@@ -9,11 +10,10 @@ import {
     residualTable,
     type ResidualNetwork,
 } from './flowShared';
-import { labelOf } from './shared';
+import { labelOf, traceText } from './shared';
 
 export interface AugmentingMethodOptions {
     findPath: (network: ResidualNetwork, source: NodeId, sink: NodeId) => NodeId[] | null;
-
     explainChoice: (pathLabel: string, edgeCount: number) => string;
     methodName: string;
 }
@@ -23,11 +23,15 @@ export function runAugmentingMethod(
     source: NodeId,
     sink: NodeId,
     options: AugmentingMethodOptions,
+    locale: Locale,
     order?: NodeId[]
 ): AlgorithmTrace {
     const builder = createTraceBuilder(graph);
     const labels = nodeLabelMap(graph);
     const network = createResidualNetwork(graph, order);
+    const flow = traceText(locale).flow;
+    const text = flow.augmenting;
+    const residual = () => residualTable(graph, network, locale);
 
     let maxFlow = 0;
     let iteration = 0;
@@ -49,10 +53,10 @@ export function runAugmentingMethod(
     builder.setNodeBadge(sink, 't');
 
     builder.commit({
-        title: "Rede residual inicial G'(f)",
-        description: `f(e) = 0 para toda aresta, portanto a capacidade residual de cada aresta direta é u_r(e) = u(e) − f(e) = u(e). A fonte é s = ${labelOf(graph, source)}, o sumidouro é t = ${labelOf(graph, sink)} e os demais são nós internos.`,
-        tables: [residualTable(graph, network)],
-        metrics: [{ label: 'Valor do fluxo', value: '0' }],
+        title: text.initialTitle,
+        description: text.initialDescription(labelOf(graph, source), labelOf(graph, sink)),
+        tables: [residual()],
+        metrics: [{ label: flow.flowValue, value: '0' }],
     });
 
     const totalCapacity = graph.edges.reduce(
@@ -81,28 +85,35 @@ export function runAugmentingMethod(
             });
 
             builder.commit({
-                title: "Não existe caminho aumentante em G'(f)",
-                description: `Em G'(f), a partir de s alcança-se apenas S = { ${[...inCut]
-                    .map((id) => labels.get(id))
-                    .join(
-                        ', '
-                    )} }. Esse é o conjunto S do corte s-t mínimo, e as arestas de corte(S), com uma extremidade em S e a outra fora, estão destacadas em vermelho.`,
-                tables: [residualTable(graph, network)],
+                title: text.noPathTitle,
+                description: text.noPathDescription(
+                    [...inCut].map((id) => labels.get(id) ?? '').join(', ')
+                ),
+                tables: [residual()],
                 metrics: [
-                    { label: 'Valor do fluxo', value: formatWeight(maxFlow) },
-                    { label: 'Capacidade do corte(S)', value: formatWeight(cutCapacity) },
-                    { label: 'Caminhos aumentantes', value: String(augmentingPaths.length) },
+                    { label: flow.flowValue, value: formatWeight(maxFlow) },
+                    { label: flow.cutCapacity, value: formatWeight(cutCapacity) },
+                    { label: text.augmentingPaths, value: String(augmentingPaths.length) },
                 ],
             });
 
             return builder.build([
-                `Fluxo máximo entre s = ${labelOf(graph, source)} e t = ${labelOf(graph, sink)}: ${formatWeight(maxFlow)}.`,
-                `${options.methodName} usou ${augmentingPaths.length} caminho(s) aumentante(s): ${augmentingPaths.join(' | ') || '-'}.`,
-                `Corte s-t mínimo: corte(S) = { ${
+                flow.maxFlowConclusion(
+                    labelOf(graph, source),
+                    labelOf(graph, sink),
+                    formatWeight(maxFlow)
+                ),
+                text.pathsConclusion(
+                    options.methodName,
+                    augmentingPaths.length,
+                    augmentingPaths.join(' | ') || '-'
+                ),
+                flow.cutConclusion(
                     cutEdges
                         .map((edge) => `(${labels.get(edge.source)}, ${labels.get(edge.target)})`)
-                        .join(', ') || '-'
-                } }, de capacidade ${formatWeight(cutCapacity)}, igual ao valor do fluxo máximo, como afirma o teorema do fluxo máximo e corte mínimo.`,
+                        .join(', ') || '-',
+                    formatWeight(cutCapacity)
+                ),
             ]);
         }
 
@@ -125,13 +136,13 @@ export function runAugmentingMethod(
         path.forEach((nodeId) => builder.setNode(nodeId, 'path'));
 
         builder.commit({
-            title: `Caminho aumentante ${iteration}: ${pathLabel}`,
-            description: `${options.explainChoice(pathLabel, path.length - 1)} O gargalo é δ = min { u_r(e) | e ∈ P } = ${formatWeight(bottleneck)}.`,
-            tables: [residualTable(graph, network)],
+            title: text.pathTitle(iteration, pathLabel),
+            description: `${options.explainChoice(pathLabel, path.length - 1)} ${text.bottleneckSentence(formatWeight(bottleneck))}`,
+            tables: [residual()],
             metrics: [
-                { label: 'Valor do fluxo', value: formatWeight(maxFlow) },
-                { label: 'Gargalo δ', value: formatWeight(bottleneck) },
-                { label: 'Arestas em P', value: String(path.length - 1) },
+                { label: flow.flowValue, value: formatWeight(maxFlow) },
+                { label: text.bottleneck, value: formatWeight(bottleneck) },
+                { label: text.edgesInPath, value: String(path.length - 1) },
             ],
         });
 
@@ -141,15 +152,12 @@ export function runAugmentingMethod(
         refreshBadges();
 
         builder.commit({
-            title: `Fluxo aumentado em δ = ${formatWeight(bottleneck)}`,
-            description: `Nas arestas diretas de P faz-se f(v, w) ← f(v, w) + δ; nas reversas, f(w, v) ← f(w, v) − δ. Cada aresta direta perde ${formatWeight(bottleneck)} de capacidade residual e a reversa correspondente ganha a mesma quantia, o que permite desfazer o envio em iterações futuras. O valor do fluxo passa a ser ${formatWeight(maxFlow)}.`,
-            tables: [residualTable(graph, network)],
-            metrics: [{ label: 'Valor do fluxo', value: formatWeight(maxFlow) }],
+            title: text.augmentedTitle(formatWeight(bottleneck)),
+            description: text.augmentedDescription(formatWeight(bottleneck), formatWeight(maxFlow)),
+            tables: [residual()],
+            metrics: [{ label: flow.flowValue, value: formatWeight(maxFlow) }],
         });
     }
 
-    return builder.build([
-        `Valor do fluxo alcançado: ${formatWeight(maxFlow)} após ${iteration} iterações.`,
-        'O limite de iterações foi atingido: revise as capacidades da rede.',
-    ]);
+    return builder.build([text.limitConclusion(formatWeight(maxFlow), iteration), flow.limitHint]);
 }

@@ -76,9 +76,9 @@
 
 - 🌐 **Live Application:** [www.graphlabs.arturbomtempo.dev](https://www.graphlabs.arturbomtempo.dev/)
     > 💻 **Description:** Production version, hosted on Vercel. No installation and no sign-up required.
-- 🧪 **Studio:** [Build a graph and run an algorithm](https://www.graphlabs.arturbomtempo.dev/estudio)
+- 🧪 **Studio:** [Build a graph and run an algorithm](https://www.graphlabs.arturbomtempo.dev/studio)
     > ✏️ **Description:** Graph editor with step by step execution, tracking tables and final conclusions.
-- 📖 **Pseudocode:** [Algorithm documentation](https://www.graphlabs.arturbomtempo.dev/algoritmos)
+- 📖 **Pseudocode:** [Algorithm documentation](https://www.graphlabs.arturbomtempo.dev/algorithms)
     > 📚 **Description:** Core idea, pseudocode, maintained invariant and common pitfalls for each method.
 - 💾 **Repository:** [github.com/arturbomtempo-dev/graph-labs](https://github.com/arturbomtempo-dev/graph-labs)
     > 🧩 **Description:** Full source code of the project.
@@ -447,21 +447,25 @@ The fastest way to get to know the project is to use it: [www.graphlabs.arturbom
 
 ### Screenshots
 
-|                                                                                                                                           Home                                                                                                                                           |                                                                                                                                            Studio                                                                                                                                             |
-| :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-|        <a href="https://www.graphlabs.arturbomtempo.dev/"><img src="https://arturbomtempo-dev.github.io/arturbomtempo-cdn/assets/images/projects/graph-labs/home.png" alt="Graph Labs home page, introducing the project and listing the available algorithms" width="100%"/></a>        | <a href="https://www.graphlabs.arturbomtempo.dev/estudio"><img src="https://arturbomtempo-dev.github.io/arturbomtempo-cdn/assets/images/projects/graph-labs/studio.png" alt="Graph Labs studio, with the graph editor on the canvas and the step by step execution panels" width="100%"/></a> |
-|                                                                                                                                      **Algorithms**                                                                                                                                      |                                                                                                                                           **About**                                                                                                                                           |
-| <a href="https://www.graphlabs.arturbomtempo.dev/algoritmos"><img src="https://arturbomtempo-dev.github.io/arturbomtempo-cdn/assets/images/projects/graph-labs/algorithms.png" alt="Graph Labs algorithms page, with the pseudocode and documentation of each method" width="100%"/></a> |           <a href="https://www.graphlabs.arturbomtempo.dev/sobre"><img src="https://arturbomtempo-dev.github.io/arturbomtempo-cdn/assets/images/projects/graph-labs/about.png" alt="Graph Labs about page, describing the origin of the project and its author" width="100%"/></a>            |
+|                                                                                                                                           Home                                                                                                                                           |                                                                                                                                            Studio                                                                                                                                            |
+| :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|        <a href="https://www.graphlabs.arturbomtempo.dev/"><img src="https://arturbomtempo-dev.github.io/arturbomtempo-cdn/assets/images/projects/graph-labs/home.png" alt="Graph Labs home page, introducing the project and listing the available algorithms" width="100%"/></a>        | <a href="https://www.graphlabs.arturbomtempo.dev/studio"><img src="https://arturbomtempo-dev.github.io/arturbomtempo-cdn/assets/images/projects/graph-labs/studio.png" alt="Graph Labs studio, with the graph editor on the canvas and the step by step execution panels" width="100%"/></a> |
+|                                                                                                                                      **Algorithms**                                                                                                                                      |                                                                                                                                          **About**                                                                                                                                           |
+| <a href="https://www.graphlabs.arturbomtempo.dev/algorithms"><img src="https://arturbomtempo-dev.github.io/arturbomtempo-cdn/assets/images/projects/graph-labs/algorithms.png" alt="Graph Labs algorithms page, with the pseudocode and documentation of each method" width="100%"/></a> |           <a href="https://www.graphlabs.arturbomtempo.dev/about"><img src="https://arturbomtempo-dev.github.io/arturbomtempo-cdn/assets/images/projects/graph-labs/about.png" alt="Graph Labs about page, describing the origin of the project and its author" width="100%"/></a>           |
 
 ### Application Pages
 
-| Route           | Page       | What it does                                                                            |
-| :-------------- | :--------- | :-------------------------------------------------------------------------------------- |
-| `/`             | Home       | Introduces the project and lists the available algorithms, grouped by category.         |
-| `/estudio`      | Studio     | Graph editor, algorithm selection, step by step execution and tracking panels.          |
-| `/algoritmos`   | Algorithms | Idea, pseudocode, invariant and pitfalls for each algorithm, filterable by category.    |
-| `/documentacao` | Docs       | Complete user guide: studio anatomy, tools, tabs, algorithm catalog, shortcuts and FAQ. |
-| `/sobre`        | About      | Origin of the project, its purpose and information about the author.                    |
+| Route         | Page       | What it does                                                                            |
+| :------------ | :--------- | :-------------------------------------------------------------------------------------- |
+| `/`           | Home       | Introduces the project and lists the available algorithms, grouped by category.         |
+| `/studio`     | Studio     | Graph editor, algorithm selection, step by step execution and tracking panels.          |
+| `/algorithms` | Algorithms | Idea, pseudocode, invariant and pitfalls for each algorithm, filterable by category.    |
+| `/docs`       | Docs       | Complete user guide: studio anatomy, tools, tabs, algorithm catalog, shortcuts and FAQ. |
+| `/about`      | About      | Origin of the project, its purpose and information about the author.                    |
+
+Routes are the same in every language: English uses them as they are, while Brazilian Portuguese and Spanish add the `/pt-br` and `/es` prefixes (for example, `/pt-br/studio` and `/es/docs`).
+
+The interface is fully available in English (default), Brazilian Portuguese and Spanish. The chosen language is saved in the browser, and the old Portuguese routes (`/estudio`, `/algoritmos`, `/documentacao`, `/sobre`) redirect to their `/pt-br` equivalents (for example, `/estudio` goes to `/pt-br/studio`).
 
 ### How to Use the Studio
 

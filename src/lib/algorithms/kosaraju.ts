@@ -1,3 +1,4 @@
+import { getDictionary } from '@/i18n/dictionaries';
 import {
     buildAdjacency,
     buildReverseAdjacency,
@@ -7,29 +8,23 @@ import {
 } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, NodeId, TraceTable } from '../graph/types';
-import { requireEdges, requireNodes } from './shared';
+import { requireEdges, requireNodes, traceText } from './shared';
 
 export const kosaraju: AlgorithmDefinition = {
     id: 'kosaraju',
-    name: 'Método de Kosaraju',
-    shortName: 'Kosaraju',
-    category: 'Conectividade',
-    tagline:
-        'Encontra os componentes fortemente conexos (f-conexos) com duas buscas em profundidade: uma em G e outra no grafo reverso Gᴿ.',
-    complexity: 'O(n + m)',
+    category: 'connectivity',
     needsStart: false,
     needsEnd: false,
-    constraints: ['Exige grafo direcionado', 'Ignora os pesos das arestas'],
     validate: (context) => {
         const errors = [...requireNodes(context), ...requireEdges(context)];
         if (hasUndirectedEdges(context.graph)) {
-            errors.push(
-                'Kosaraju opera sobre grafos direcionados: converta todas as arestas para direcionadas.'
-            );
+            errors.push(traceText(context.locale).issues.directedOnly('Kosaraju'));
         }
         return errors;
     },
-    run: ({ graph, order }) => {
+    run: ({ graph, order, locale }) => {
+        const shared = traceText(locale);
+        const text = getDictionary(locale).algorithms.kosaraju.trace;
         const builder = createTraceBuilder(graph);
         const adjacency = buildAdjacency(graph, order);
         const reverse = buildReverseAdjacency(graph, order);
@@ -41,7 +36,7 @@ export const kosaraju: AlgorithmDefinition = {
 
         const orderList = () => ({
             id: 'finish-order',
-            title: 'Pilha de finalização',
+            title: text.finishStackTitle,
             variant: 'stack' as const,
             items: finishOrder.map((id) => labels.get(id) ?? ''),
         });
@@ -55,10 +50,10 @@ export const kosaraju: AlgorithmDefinition = {
             });
             return {
                 id: 'scc-table',
-                title: 'Componentes fortemente conexos',
+                title: text.componentsTitle,
                 columns: [
-                    { key: 'component', label: 'Componente' },
-                    { key: 'members', label: 'Vértices' },
+                    { key: 'component', label: shared.columns.component },
+                    { key: 'members', label: shared.columns.vertices },
                 ],
                 rows: [...groups.entries()]
                     .sort((a, b) => a[0] - b[0])
@@ -74,9 +69,8 @@ export const kosaraju: AlgorithmDefinition = {
         };
 
         builder.commit({
-            title: 'Passo 1: busca em profundidade em G',
-            description:
-                'A primeira busca em profundidade percorre G e empilha cada vértice no momento em que seu tempo de término TT é definido.',
+            title: text.step1Title,
+            description: text.step1Description,
             lists: [orderList()],
         });
 
@@ -84,8 +78,8 @@ export const kosaraju: AlgorithmDefinition = {
             visitedFirst.add(current);
             builder.setNode(current, 'active');
             builder.commit({
-                title: `Visita ${labels.get(current)}`,
-                description: `${labels.get(current)} é marcado na primeira busca em profundidade.`,
+                title: text.visitTitle(labels.get(current) ?? ''),
+                description: text.visitDescription(labels.get(current) ?? ''),
                 lists: [orderList()],
             });
 
@@ -100,8 +94,8 @@ export const kosaraju: AlgorithmDefinition = {
             finishOrder.push(current);
             builder.setNode(current, 'done');
             builder.commit({
-                title: `Finaliza ${labels.get(current)}`,
-                description: `${labels.get(current)} não tem mais vizinhos a explorar: seu TT é definido e ele é empilhado. O topo da pilha é o vértice de maior TT.`,
+                title: text.finishTitle(labels.get(current) ?? ''),
+                description: text.finishDescription(labels.get(current) ?? ''),
                 lists: [orderList()],
             });
         };
@@ -114,13 +108,13 @@ export const kosaraju: AlgorithmDefinition = {
         graph.edges.forEach((edge) => builder.setEdge(edge.id, 'idle'));
 
         builder.commit({
-            title: 'Passo 2: construção do grafo reverso Gᴿ',
-            description: `Todas as arestas são invertidas: se (v, w) ∈ E(G) então (w, v) ∈ E(Gᴿ). A segunda busca percorrerá Gᴿ em ordem decrescente de TT: ${[
-                ...finishOrder,
-            ]
-                .reverse()
-                .map((id) => labels.get(id))
-                .join(', ')}.`,
+            title: text.step2Title,
+            description: text.step2Description(
+                [...finishOrder]
+                    .reverse()
+                    .map((id) => labels.get(id))
+                    .join(', ')
+            ),
             lists: [orderList()],
         });
 
@@ -135,8 +129,8 @@ export const kosaraju: AlgorithmDefinition = {
             builder.setNodeBadge(current, `C${index + 1}`);
 
             builder.commit({
-                title: `${labels.get(current)} entra em C${index + 1}`,
-                description: `Em Gᴿ, ${labels.get(current)} é alcançável a partir da raiz desta árvore de profundidade, portanto pertence ao mesmo componente fortemente conexo.`,
+                title: text.joinTitle(labels.get(current) ?? '', `C${index + 1}`),
+                description: text.joinDescription(labels.get(current) ?? ''),
                 tables: [componentsTable()],
                 lists: [orderList()],
             });
@@ -152,8 +146,11 @@ export const kosaraju: AlgorithmDefinition = {
         [...finishOrder].reverse().forEach((nodeId) => {
             if (visitedSecond.has(nodeId)) return;
             builder.commit({
-                title: `Nova componente a partir de ${labels.get(nodeId)}`,
-                description: `${labels.get(nodeId)} é o vértice ainda não marcado com maior TT, então ele é a raiz de uma nova árvore de profundidade em Gᴿ, que corresponde ao componente C${componentIndex + 1}.`,
+                title: text.newComponentTitle(labels.get(nodeId) ?? ''),
+                description: text.newComponentDescription(
+                    labels.get(nodeId) ?? '',
+                    `C${componentIndex + 1}`
+                ),
                 tables: [componentsTable()],
                 lists: [orderList()],
             });
@@ -167,16 +164,16 @@ export const kosaraju: AlgorithmDefinition = {
         });
 
         builder.commit({
-            title: 'Passo 3: componentes identificados',
-            description: `Cada árvore da floresta de profundidade obtida em Gᴿ é um componente fortemente conexo: G possui ${componentIndex} componente(s) f-conexo(s). As arestas destacadas ligam vértices de um mesmo componente.`,
+            title: text.step3Title,
+            description: text.step3Description(componentIndex),
             tables: [componentsTable()],
         });
 
         return builder.build([
-            `Foram encontrados ${componentIndex} componente(s) fortemente conexo(s).`,
+            text.countConclusion(componentIndex),
             componentIndex === 1
-                ? 'Todos os vértices são mutuamente alcançáveis, portanto G é fortemente conexo (f-conexo).'
-                : 'Como há mais de um componente f-conexo, G não é fortemente conexo: existe par de vértices que não se alcançam mutuamente.',
+                ? text.stronglyConnectedConclusion
+                : text.notStronglyConnectedConclusion,
         ]);
     },
 };

@@ -1,3 +1,4 @@
+import { getDictionary } from '@/i18n/dictionaries';
 import {
     buildAdjacency,
     hasUndirectedEdges,
@@ -7,33 +8,23 @@ import {
 } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, NodeId, TraceTable } from '../graph/types';
-import { requireEdges, requireNodes } from './shared';
+import { requireEdges, requireNodes, traceText } from './shared';
 
 export const kahn: AlgorithmDefinition = {
     id: 'kahn',
-    name: 'Método de Kahn',
-    shortName: 'Kahn',
-    category: 'Ordenação topológica',
-    tagline:
-        'Determina a cada instante um vértice com grau de entrada zero, insere-o no fim do resultado e reduz o grau de entrada de seus sucessores.',
-    complexity: 'O(n + m)',
+    category: 'topological-sort',
     needsStart: false,
     needsEnd: false,
-    constraints: [
-        'Exige grafo direcionado',
-        'Só existe ordenação topológica em grafo acíclico',
-        'Detecta a existência de ciclo',
-    ],
     validate: (context) => {
         const errors = [...requireNodes(context), ...requireEdges(context)];
         if (hasUndirectedEdges(context.graph)) {
-            errors.push(
-                'Não é possível estabelecer uma ordenação topológica em grafo não direcionado: converta todas as arestas para direcionadas.'
-            );
+            errors.push(traceText(context.locale).topological.undirectedIssue);
         }
         return errors;
     },
-    run: ({ graph, order }) => {
+    run: ({ graph, order, locale }) => {
+        const shared = traceText(locale);
+        const text = getDictionary(locale).algorithms.kahn.trace;
         const builder = createTraceBuilder(graph);
         const adjacency = buildAdjacency(graph, order);
         const labels = nodeLabelMap(graph);
@@ -50,11 +41,11 @@ export const kahn: AlgorithmDefinition = {
 
         const degreeTable = (highlight?: NodeId): TraceTable => ({
             id: 'kahn-degrees',
-            title: 'Mapa de graus de entrada M',
+            title: text.degreesTitle,
             columns: [
-                { key: 'vertex', label: 'Vértice' },
+                { key: 'vertex', label: shared.columns.vertex },
                 { key: 'degree', label: 'M[v]' },
-                { key: 'status', label: 'Situação' },
+                { key: 'status', label: shared.columns.status },
             ],
             rows: ordered.map((node) => ({
                 key: node.id,
@@ -68,24 +59,24 @@ export const kahn: AlgorithmDefinition = {
                     vertex: node.label,
                     degree: String(inDegree.get(node.id) ?? 0),
                     status: result.includes(node.id)
-                        ? `posição ${result.indexOf(node.id) + 1}`
+                        ? text.positionStatus(result.indexOf(node.id) + 1)
                         : queue.includes(node.id)
-                          ? 'na fila'
-                          : 'aguardando',
+                          ? text.queuedStatus
+                          : text.waitingStatus,
                 },
             })),
         });
 
         const queueList = () => ({
             id: 'kahn-queue',
-            title: 'Fila',
+            title: shared.queue,
             variant: 'queue' as const,
             items: queue.map((id) => labels.get(id) ?? ''),
         });
 
         const resultList = () => ({
             id: 'kahn-result',
-            title: 'Ordena_Top',
+            title: shared.topological.result,
             variant: 'set' as const,
             items: result.map((id) => labels.get(id) ?? ''),
         });
@@ -96,9 +87,8 @@ export const kahn: AlgorithmDefinition = {
         });
 
         builder.commit({
-            title: 'Inicialização',
-            description:
-                'M[v] recebe o grau de entrada d⁻(v) de cada vértice. A fila e o resultado Ordena_Top começam vazios.',
+            title: shared.initialization,
+            description: text.initDescription,
             ...snapshot(),
         });
 
@@ -110,11 +100,11 @@ export const kahn: AlgorithmDefinition = {
         });
 
         builder.commit({
-            title: 'Vértices sem arestas de entrada',
+            title: text.sourcesTitle,
             description:
                 queue.length > 0
-                    ? `Os vértices com d⁻(v) = 0 entram na fila: ${queue.map((id) => labels.get(id)).join(', ')}. Eles não dependem de nenhum outro.`
-                    : 'Nenhum vértice tem d⁻(v) = 0. Como todo grafo acíclico direcionado possui pelo menos um vértice sem arestas de entrada, o grafo contém um ciclo.',
+                    ? text.sourcesDescription(queue.map((id) => labels.get(id)).join(', '))
+                    : text.noSourcesDescription,
             ...snapshot(),
         });
 
@@ -126,8 +116,8 @@ export const kahn: AlgorithmDefinition = {
             builder.setNodeBadge(current, String(result.length));
 
             builder.commit({
-                title: `${labels.get(current)} entra em Ordena_Top na posição ${result.length}`,
-                description: `${labels.get(current)} sai da fila e é inserido no fim do resultado. Sua numeração topológica é ${result.length}, pois todos os vértices que o precedem já foram processados.`,
+                title: text.insertTitle(labels.get(current) ?? '', result.length),
+                description: text.insertDescription(labels.get(current) ?? '', result.length),
                 ...snapshot(current),
             });
 
@@ -140,14 +130,22 @@ export const kahn: AlgorithmDefinition = {
                     queue.push(entry.to);
                     builder.setNode(entry.to, 'frontier');
                     builder.commit({
-                        title: `M[${labels.get(entry.to)}] chega a 0, entra na fila`,
-                        description: `Removida a aresta (${labels.get(current)}, ${labels.get(entry.to)}), o grau de entrada de ${labels.get(entry.to)} cai de ${before} para 0: todas as suas dependências já estão no resultado, então ele entra na fila.`,
+                        title: text.zeroTitle(labels.get(entry.to) ?? ''),
+                        description: text.zeroDescription(
+                            labels.get(current) ?? '',
+                            labels.get(entry.to) ?? '',
+                            before
+                        ),
                         ...snapshot(entry.to),
                     });
                 } else {
                     builder.commit({
                         title: `M[${labels.get(entry.to)}] = ${before - 1}`,
-                        description: `Removida a aresta (${labels.get(current)}, ${labels.get(entry.to)}), o grau de entrada de ${labels.get(entry.to)} cai de ${before} para ${before - 1}. Ele ainda depende de ${before - 1} vértice(s) e permanece fora da fila.`,
+                        description: text.decreasedDescription(
+                            labels.get(current) ?? '',
+                            labels.get(entry.to) ?? '',
+                            before
+                        ),
                         ...snapshot(entry.to),
                     });
                 }
@@ -171,35 +169,33 @@ export const kahn: AlgorithmDefinition = {
             });
 
             builder.commit({
-                title: 'Ciclo detectado',
-                description: `A fila esvaziou com ${pending.length} vértice(s) ainda não processado(s): ${pending
-                    .map((node) => node.label)
-                    .join(
-                        ', '
-                    )}. Todos continuam com M[v] > 0, o que só é possível se houver um ciclo entre eles.`,
+                title: text.cycleTitle,
+                description: text.cycleDescription(
+                    pending.length,
+                    pending.map((node) => node.label).join(', ')
+                ),
                 ...snapshot(),
             });
 
             return builder.build([
-                `Nem todos os vértices foram processados: o grafo possui um ciclo envolvendo ${pending
-                    .map((node) => node.label)
-                    .join(', ')}.`,
-                'Um grafo com ciclo não admite ordenação topológica, pois não é possível estabelecer uma relação de precedência entre os vértices do ciclo.',
+                text.pendingConclusion(pending.map((node) => node.label).join(', ')),
+                shared.topological.cycleConclusion,
             ]);
         }
 
         builder.commit({
-            title: 'Ordenação topológica concluída',
-            description: `Todos os ${result.length} vértices foram processados: ${result
-                .map((id) => labels.get(id))
-                .join(' → ')}.`,
+            title: shared.topological.completeTitle,
+            description: text.completeDescription(
+                result.length,
+                result.map((id) => labels.get(id)).join(' → ')
+            ),
             ...snapshot(),
         });
 
         return builder.build([
-            `Ordenação topológica: ${result.map((id) => labels.get(id)).join(' → ')}.`,
-            'A numeração topológica ord(v) corresponde à ordem de inserção no resultado, e satisfaz ord(v) < ord(w) para toda aresta (v, w) ∈ E(G).',
-            'Todos os vértices foram processados, portanto o grafo é acíclico. Note que a ordenação topológica pode não ser única.',
+            shared.topological.orderConclusion(result.map((id) => labels.get(id)).join(' → ')),
+            text.numberingConclusion,
+            text.acyclicConclusion,
         ]);
     },
 };

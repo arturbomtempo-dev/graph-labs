@@ -1,6 +1,7 @@
+import { useI18n } from '@/hooks/useI18n';
+import { cn } from '@/lib/utils/cn';
 import { ChevronDown } from 'lucide-react';
 import type { MouseEvent } from 'react';
-import { cn } from '@/lib/utils/cn';
 
 export interface TocItem {
     id: string;
@@ -21,12 +22,13 @@ function createNavigateHandler(onNavigate: (id: string) => void) {
 }
 
 export function TableOfContents({ items, activeId, onNavigate }: TableOfContentsProps) {
+    const { t } = useI18n();
     const handleClick = createNavigateHandler(onNavigate);
 
     return (
-        <nav aria-label="Seções da documentação">
+        <nav aria-label={t.docs.toc.ariaLabel}>
             <p className="text-ink-faint px-3 text-[10px] font-semibold tracking-wider uppercase">
-                Nesta página
+                {t.docs.toc.label}
             </p>
             <ol className="border-line mt-3 flex flex-col border-l">
                 {items.map((item, index) => {
@@ -61,12 +63,13 @@ export function MobileTableOfContents({
     items,
     onNavigate,
 }: Omit<TableOfContentsProps, 'activeId'>) {
+    const { t } = useI18n();
     const handleClick = createNavigateHandler(onNavigate);
 
     return (
         <details className="border-line bg-surface shadow-soft group rounded-card border lg:hidden">
             <summary className="text-ink flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">
-                Nesta página
+                {t.docs.toc.label}
                 <ChevronDown
                     size={16}
                     className="text-ink-faint transition-transform duration-200 group-open:rotate-180"

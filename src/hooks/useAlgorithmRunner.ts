@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getDictionary } from '@/i18n/dictionaries';
 import type { AlgorithmContext, AlgorithmDefinition, AlgorithmTrace } from '@/lib/graph/types';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export const playbackSpeeds = [
-    { label: '0,5×', value: 1600 },
-    { label: '1×', value: 800 },
-    { label: '2×', value: 400 },
-    { label: '4×', value: 180 },
+    { factor: 0.5, value: 1600 },
+    { factor: 1, value: 800 },
+    { factor: 2, value: 400 },
+    { factor: 4, value: 180 },
 ];
 
 interface RunState {
@@ -45,7 +46,7 @@ export function useAlgorithmRunner() {
             setError(null);
             return true;
         } catch {
-            setError('Não foi possível executar o algoritmo com este grafo.');
+            setError(getDictionary(context.locale).studio.steps.runFailed);
             return false;
         }
     }, []);

@@ -1,3 +1,4 @@
+import { getDictionary } from '@/i18n/dictionaries';
 import {
     buildAdjacency,
     formatDistance,
@@ -10,23 +11,13 @@ import {
 } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, NodeId, TraceTable } from '../graph/types';
-import { labelOf, requireEdges, requireNodes, requireStart } from './shared';
+import { labelOf, requireEdges, requireNodes, requireStart, traceText } from './shared';
 
 export const prim: AlgorithmDefinition = {
     id: 'prim',
-    name: 'Método de Prim',
-    shortName: 'Prim',
-    category: 'Árvore geradora mínima',
-    tagline:
-        'Inclui vértices um a um: a cada passo acrescenta a aresta de menor peso entre V(T) e os vértices ainda não selecionados.',
-    complexity: 'O(m log n)',
+    category: 'spanning-tree',
     needsStart: true,
     needsEnd: false,
-    constraints: [
-        'Exige grafo não direcionado',
-        'Exige grafo ponderado com peso w(e) > 0',
-        'Só existe árvore geradora se o grafo for conexo',
-    ],
     validate: (context) => {
         const errors = [
             ...requireNodes(context),
@@ -34,13 +25,13 @@ export const prim: AlgorithmDefinition = {
             ...requireStart(context),
         ];
         if (hasDirectedEdges(context.graph)) {
-            errors.push(
-                'Prim opera sobre grafos não direcionados: converta todas as arestas para não direcionadas.'
-            );
+            errors.push(traceText(context.locale).issues.undirectedOnly('Prim'));
         }
         return errors;
     },
-    run: ({ graph, startId, order }) => {
+    run: ({ graph, startId, order, locale }) => {
+        const shared = traceText(locale);
+        const text = getDictionary(locale).algorithms.prim.trace;
         const builder = createTraceBuilder(graph);
         const adjacency = buildAdjacency(graph, order);
         const labels = nodeLabelMap(graph);
@@ -62,12 +53,12 @@ export const prim: AlgorithmDefinition = {
 
         const keyTable = (highlight?: NodeId): TraceTable => ({
             id: 'prim-keys',
-            title: 'Menor peso até V(T)',
+            title: text.keysTitle,
             columns: [
-                { key: 'vertex', label: 'Vértice w' },
-                { key: 'keyValue', label: 'menor peso' },
+                { key: 'vertex', label: text.vertexColumn },
+                { key: 'keyValue', label: text.minWeightColumn },
                 { key: 'parent', label: 'v ∈ V(T)' },
-                { key: 'status', label: 'Situação' },
+                { key: 'status', label: shared.columns.status },
             ],
             rows: sortedNodes(graph).map((node) => ({
                 key: node.id,
@@ -77,22 +68,22 @@ export const prim: AlgorithmDefinition = {
                     vertex: node.label,
                     keyValue: formatDistance(key.get(node.id) ?? Number.POSITIVE_INFINITY),
                     parent: labels.get(parent.get(node.id) ?? '') ?? '-',
-                    status: inTree.has(node.id) ? 'em V(T)' : 'fora de V(T)',
+                    status: inTree.has(node.id) ? text.inTreeStatus : text.outsideTreeStatus,
                 },
             })),
         });
 
         const metrics = () => [
             {
-                label: 'Arestas em E(T)',
+                label: shared.spanningTree.edgesMetric,
                 value: `${treeEdges.length} / ${graph.nodes.length - 1}`,
             },
-            { label: 'Peso total C(T)', value: formatWeight(totalWeight) },
+            { label: shared.spanningTree.totalWeightMetric, value: formatWeight(totalWeight) },
         ];
 
         builder.commit({
-            title: 'Inicialização',
-            description: `Escolhida a raiz ${labelOf(graph, startId)}: V(T) = { ${labelOf(graph, startId)} } e E(T) = ∅. Nenhum outro vértice tem ainda uma aresta conhecida até V(T), por isso o menor peso é ∞.`,
+            title: shared.initialization,
+            description: text.initDescription(labelOf(graph, startId)),
             tables: [keyTable()],
             metrics: metrics(),
         });
@@ -111,9 +102,8 @@ export const prim: AlgorithmDefinition = {
 
             if (candidate === null) {
                 builder.commit({
-                    title: 'Grafo desconexo',
-                    description:
-                        'Não existe aresta entre V(T) e os vértices restantes: o grafo é desconexo. Como um grafo só possui árvore geradora se for conexo, o resultado cobre apenas o componente conexo da raiz.',
+                    title: text.disconnectedTitle,
+                    description: text.disconnectedDescription,
                     tables: [keyTable()],
                     metrics: metrics(),
                 });
@@ -133,10 +123,14 @@ export const prim: AlgorithmDefinition = {
             }
 
             builder.commit({
-                title: `Acrescenta ${labels.get(current)} a V(T)`,
+                title: text.addTitle(labels.get(current) ?? ''),
                 description: linkingEdge
-                    ? `A aresta de menor peso com uma extremidade em V(T) e a outra fora é {${labelOf(graph, parent.get(current))}, ${labels.get(current)}}, de peso ${formatWeight(bestKey)}. Ela é acrescentada a E(T) e ${labels.get(current)} passa a pertencer a V(T).`
-                    : `${labels.get(current)} é a raiz r e inicia V(T), ainda sem nenhuma aresta em E(T).`,
+                    ? text.addDescription(
+                          labelOf(graph, parent.get(current)),
+                          labels.get(current) ?? '',
+                          formatWeight(bestKey)
+                      )
+                    : text.rootDescription(labels.get(current) ?? ''),
                 tables: [keyTable(current)],
                 metrics: metrics(),
             });
@@ -154,15 +148,25 @@ export const prim: AlgorithmDefinition = {
                     builder.setNodeBadge(entry.to, formatWeight(weight));
                     builder.setEdge(entry.edge.id, 'active');
                     builder.commit({
-                        title: `Nova aresta candidata para ${labels.get(entry.to)}`,
-                        description: `A aresta {${labels.get(current)}, ${labels.get(entry.to)}} tem peso ${formatWeight(weight)}, menor que o menor peso conhecido até aqui (${formatDistance(currentKey)}). Ela passa a ser a candidata a ligar ${labels.get(entry.to)} a V(T).`,
+                        title: text.candidateTitle(labels.get(entry.to) ?? ''),
+                        description: text.candidateDescription(
+                            labels.get(current) ?? '',
+                            labels.get(entry.to) ?? '',
+                            formatWeight(weight),
+                            formatDistance(currentKey)
+                        ),
                         tables: [keyTable(entry.to)],
                         metrics: metrics(),
                     });
                 } else {
                     builder.commit({
-                        title: `Mantém a candidata de ${labels.get(entry.to)}`,
-                        description: `A aresta {${labels.get(current)}, ${labels.get(entry.to)}} tem peso ${formatWeight(weight)}, que não é menor que o menor peso já conhecido (${formatDistance(currentKey)}).`,
+                        title: text.keepTitle(labels.get(entry.to) ?? ''),
+                        description: text.keepDescription(
+                            labels.get(current) ?? '',
+                            labels.get(entry.to) ?? '',
+                            formatWeight(weight),
+                            formatDistance(currentKey)
+                        ),
                         tables: [keyTable(entry.to)],
                         metrics: metrics(),
                     });
@@ -177,18 +181,18 @@ export const prim: AlgorithmDefinition = {
         });
 
         builder.commit({
-            title: 'AGM concluída',
-            description: `V(T) = V(G) e a árvore possui ${treeEdges.length} aresta(s), com peso total C(T) = ${formatWeight(totalWeight)}.`,
+            title: text.completeTitle,
+            description: text.completeDescription(treeEdges.length, formatWeight(totalWeight)),
             tables: [keyTable()],
             metrics: metrics(),
         });
 
         return builder.build([
-            `Peso total da árvore geradora mínima: C(T) = ${formatWeight(totalWeight)}.`,
-            `|E(T)| = ${treeEdges.length}. Uma árvore geradora de ${inTree.size} vértices tem exatamente |V| − 1 = ${Math.max(inTree.size - 1, 0)} aresta(s).`,
+            text.totalConclusion(formatWeight(totalWeight)),
+            text.edgesConclusion(treeEdges.length, inTree.size),
             inTree.size < graph.nodes.length
-                ? 'O grafo é desconexo, portanto o resultado é a AGM apenas do componente conexo que contém a raiz.'
-                : 'Todos os vértices foram selecionados: T é uma árvore geradora de G.',
+                ? text.disconnectedConclusion
+                : text.spanningConclusion,
         ]);
     },
 };

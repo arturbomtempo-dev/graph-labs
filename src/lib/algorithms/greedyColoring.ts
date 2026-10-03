@@ -1,22 +1,26 @@
+import type { Locale } from '@/i18n/config';
+import { getDictionary } from '@/i18n/dictionaries';
 import { buildAdjacency, hasDirectedEdges, orderedNodes } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, GraphNode, NodeId, TraceTable } from '../graph/types';
-import { requireNodes } from './shared';
+import { requireNodes, traceText } from './shared';
 
 export function colorTable(
     id: string,
     order: GraphNode[],
     color: Map<NodeId, number>,
     degree: Map<NodeId, number>,
+    locale: Locale,
     highlight?: NodeId
 ): TraceTable {
+    const shared = traceText(locale);
     return {
         id,
-        title: 'Cores atribuídas',
+        title: shared.coloring.tableTitle,
         columns: [
-            { key: 'vertex', label: 'Vértice' },
+            { key: 'vertex', label: shared.columns.vertex },
             { key: 'degree', label: 'd(v)' },
-            { key: 'colorIndex', label: 'cor(v)' },
+            { key: 'colorIndex', label: shared.coloring.colorColumn },
         ],
         rows: order.map((node) => ({
             key: node.id,
@@ -41,29 +45,19 @@ export function undirectedDegrees(
 
 export const greedyColoring: AlgorithmDefinition = {
     id: 'greedy-coloring',
-    name: 'Método guloso',
-    shortName: 'Coloração gulosa',
-    category: 'Coloração',
-    tagline:
-        'Percorre os vértices em uma ordem qualquer e atribui a cada um a cor de menor índice não utilizada por nenhum de seus vizinhos.',
-    complexity: 'O(n + m)',
+    category: 'coloring',
     needsStart: false,
     needsEnd: false,
-    constraints: [
-        'Exige grafo não direcionado',
-        'Coloração aproximada, não necessariamente mínima',
-        'O resultado depende da ordem dos vértices',
-    ],
     validate: (context) => {
         const errors = [...requireNodes(context)];
         if (hasDirectedEdges(context.graph)) {
-            errors.push(
-                'A coloração de vértices é definida para grafo não direcionado: converta todas as arestas para não direcionadas.'
-            );
+            errors.push(traceText(context.locale).coloring.undirectedOnly);
         }
         return errors;
     },
-    run: ({ graph, order }) => {
+    run: ({ graph, order, locale }) => {
+        const coloring = traceText(locale).coloring;
+        const text = getDictionary(locale).algorithms['greedy-coloring'].trace;
         const builder = createTraceBuilder(graph);
         const adjacency = buildAdjacency(graph, order);
         const sequence = orderedNodes(graph, order);
@@ -73,9 +67,9 @@ export const greedyColoring: AlgorithmDefinition = {
         let used = 0;
 
         const snapshot = (highlight?: NodeId) => ({
-            tables: [colorTable('greedy-colors', sequence, color, degree, highlight)],
+            tables: [colorTable('greedy-colors', sequence, color, degree, locale, highlight)],
             metrics: [
-                { label: 'Cores utilizadas', value: String(used) },
+                { label: coloring.colorsUsed, value: String(used) },
                 {
                     label: 'Δ(G)',
                     value: String(Math.max(0, ...sequence.map((n) => degree.get(n.id) ?? 0))),
@@ -84,10 +78,8 @@ export const greedyColoring: AlgorithmDefinition = {
         });
 
         builder.commit({
-            title: 'Inicialização',
-            description: `Nenhum vértice está colorido. Os vértices serão considerados na ordem ${sequence
-                .map((node) => node.label)
-                .join(', ')}. Qualquer ordem é válida, mas o resultado depende dela.`,
+            title: traceText(locale).initialization,
+            description: text.initDescription(sequence.map((node) => node.label).join(', ')),
             ...snapshot(),
         });
 
@@ -106,7 +98,7 @@ export const greedyColoring: AlgorithmDefinition = {
             color.set(node.id, chosen);
             used = Math.max(used, chosen + 1);
             builder.setNodeGroup(node.id, chosen);
-            builder.setNodeBadge(node.id, `cor ${chosen + 1}`);
+            builder.setNodeBadge(node.id, coloring.badge(chosen + 1));
             builder.setNode(node.id, 'done');
             neighbours.forEach((entry) => {
                 if (color.has(entry.to)) builder.setEdge(entry.edge.id, 'done');
@@ -115,11 +107,11 @@ export const greedyColoring: AlgorithmDefinition = {
             const usedByNeighbours = [...forbidden].sort((a, b) => a - b).map((c) => c + 1);
 
             builder.commit({
-                title: `${node.label} recebe a cor ${chosen + 1}`,
+                title: coloring.colorTitle(node.label, chosen + 1),
                 description:
                     usedByNeighbours.length > 0
-                        ? `Os vizinhos já coloridos de ${node.label} usam a(s) cor(es) ${usedByNeighbours.join(', ')}. A cor de menor índice ainda livre é a ${chosen + 1}.`
-                        : `Nenhum vizinho de ${node.label} está colorido, então ele recebe a cor de menor índice: a ${chosen + 1}.`,
+                        ? text.neighborsDescription(node.label, usedByNeighbours, chosen + 1)
+                        : text.freeDescription(node.label, chosen + 1),
                 ...snapshot(node.id),
             });
         }
@@ -127,15 +119,15 @@ export const greedyColoring: AlgorithmDefinition = {
         const maxDegree = Math.max(0, ...sequence.map((node) => degree.get(node.id) ?? 0));
 
         builder.commit({
-            title: 'Coloração concluída',
-            description: `Todos os vértices foram coloridos usando ${used} cor(es). Vértices adjacentes têm cores diferentes, portanto a coloração é válida.`,
+            title: coloring.completeTitle,
+            description: text.completeDescription(used),
             ...snapshot(),
         });
 
         return builder.build([
-            `O método guloso produziu uma ${used}-coloração, logo χ(G) ≤ ${used}.`,
-            `Δ(G) = ${maxDegree}, e vale sempre χ(G) ≤ Δ(G) + 1 = ${maxDegree + 1}.`,
-            'O resultado do método guloso depende da ordem em que os vértices são considerados: outra ordem pode produzir menos cores.',
+            text.resultConclusion(used),
+            coloring.boundConclusion(maxDegree),
+            text.orderConclusion,
         ]);
     },
 };

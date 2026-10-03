@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { IconButton } from '@/components/IconButton';
 import { Select } from '@/components/Select';
 import { TextField } from '@/components/TextField';
+import { useI18n } from '@/hooks/useI18n';
 import { sortedNodes } from '@/lib/graph/helpers';
 import { presets } from '@/lib/graph/presets';
 import type { Graph, GraphEdge, NodeId } from '@/lib/graph/types';
@@ -56,6 +57,8 @@ export function BuilderPanel({
     onLoadPreset,
     onSetAllDirected,
 }: BuilderPanelProps) {
+    const { t } = useI18n();
+    const text = t.studio.builder;
     const nodes = sortedNodes(graph);
     const [source, setSource] = useState('');
     const [target, setTarget] = useState('');
@@ -68,30 +71,27 @@ export function BuilderPanel({
 
     const handleAddEdge = () => {
         if (!source || !target) {
-            setFeedback('Escolha os dois vértices da aresta.');
+            setFeedback(text.errors.chooseBoth);
             return;
         }
         if (source === target) {
-            setFeedback('Laços não são suportados: escolha vértices diferentes.');
+            setFeedback(text.errors.noLoops);
             return;
         }
         const trimmed = weight.trim();
         const parsed = trimmed === '' ? undefined : Number(trimmed.replace(',', '.'));
         if (parsed !== undefined && !Number.isFinite(parsed)) {
-            setFeedback('Informe um peso numérico válido ou deixe o campo vazio.');
+            setFeedback(text.errors.invalidWeight);
             return;
         }
         const created = onAddEdge(source, target, parsed, directed);
-        setFeedback(created ? null : 'Já existe uma aresta entre esses vértices.');
+        setFeedback(created ? null : text.errors.duplicate);
     };
 
     return (
         <div className="flex flex-col gap-3">
             <Card>
-                <CardHeader
-                    title="Modelos prontos"
-                    description="Carregue um grafo de exemplo para testar rapidamente."
-                />
+                <CardHeader title={text.presetsTitle} description={text.presetsDescription} />
                 <div className="flex flex-col gap-1.5 p-3">
                     {presets.map((preset) => (
                         <button
@@ -100,10 +100,10 @@ export function BuilderPanel({
                             className="border-line hover:border-brand hover:bg-brand/5 group cursor-pointer rounded-lg border px-3 py-2.5 text-left transition-all"
                         >
                             <p className="text-ink group-hover:text-brand text-xs font-semibold transition-colors">
-                                {preset.name}
+                                {t.presets[preset.id].name}
                             </p>
                             <p className="text-ink-soft mt-0.5 text-[11px] leading-relaxed">
-                                {preset.description}
+                                {t.presets[preset.id].description}
                             </p>
                         </button>
                     ))}
@@ -112,8 +112,8 @@ export function BuilderPanel({
 
             <Card>
                 <CardHeader
-                    title="Vértices"
-                    description={`${stats.nodeCount} vértice(s) no grafo.`}
+                    title={text.verticesTitle}
+                    description={text.verticesCount(stats.nodeCount)}
                     action={
                         <Button
                             size="sm"
@@ -121,15 +121,15 @@ export function BuilderPanel({
                             icon={<Plus size={14} />}
                             onClick={onAddNode}
                         >
-                            Novo
+                            {text.newVertex}
                         </Button>
                     }
                 />
                 {nodes.length === 0 ? (
                     <EmptyState
                         icon={<Waypoints size={18} />}
-                        title="Nenhum vértice ainda"
-                        description="Use a ferramenta de adicionar vértice no canvas ou o botão Novo."
+                        title={text.noVerticesTitle}
+                        description={text.noVerticesDescription}
                     />
                 ) : (
                     <ul className="flex flex-col p-2">
@@ -158,7 +158,7 @@ export function BuilderPanel({
                                     className="text-ink min-w-0 flex-1 bg-transparent text-sm outline-none"
                                 />
                                 <IconButton
-                                    label={`Remover vértice ${node.label}`}
+                                    label={text.removeVertex(node.label)}
                                     size="sm"
                                     variant="danger"
                                     icon={<Trash2 size={14} />}
@@ -172,16 +172,20 @@ export function BuilderPanel({
 
             <Card>
                 <CardHeader
-                    title="Arestas"
-                    description={`${stats.edgeCount} aresta(s) · ${stats.directedCount} direcionada(s) · ${stats.undirectedCount} não direcionada(s).`}
+                    title={text.edgesTitle}
+                    description={text.edgesSummary(
+                        stats.edgeCount,
+                        stats.directedCount,
+                        stats.undirectedCount
+                    )}
                 />
 
                 <div className="border-line flex flex-col gap-2.5 border-b p-3">
                     <div className="flex items-end gap-2">
                         <Select
-                            label="De"
+                            label={text.from}
                             options={nodeOptions}
-                            placeholder="Selecione"
+                            placeholder={text.select}
                             value={source}
                             onChange={(event) => {
                                 setSource(event.target.value);
@@ -190,9 +194,9 @@ export function BuilderPanel({
                         />
                         <ArrowRight size={15} className="text-ink-faint mb-3 shrink-0" />
                         <Select
-                            label="Para"
+                            label={text.to}
                             options={nodeOptions}
-                            placeholder="Selecione"
+                            placeholder={text.select}
                             value={target}
                             onChange={(event) => {
                                 setTarget(event.target.value);
@@ -203,15 +207,15 @@ export function BuilderPanel({
 
                     <div className="flex items-end gap-2">
                         <TextField
-                            label="Peso"
+                            label={text.weight}
                             className="w-24 shrink-0"
-                            placeholder="opcional"
+                            placeholder={text.optional}
                             inputMode="decimal"
                             value={weight}
                             onChange={(event) => setWeight(event.target.value)}
                         />
                         <div className="flex flex-1 flex-col gap-1.5">
-                            <label className="text-ink-soft text-xs font-medium">Tipo</label>
+                            <label className="text-ink-soft text-xs font-medium">{text.type}</label>
                             <div className="bg-surface-sunken border-line flex h-10 gap-0.5 rounded-lg border p-0.5">
                                 <button
                                     onClick={() => setDirected(false)}
@@ -222,7 +226,7 @@ export function BuilderPanel({
                                             : 'text-ink-soft hover:text-ink'
                                     )}
                                 >
-                                    <Minus size={13} /> Simples
+                                    <Minus size={13} /> {text.undirected}
                                 </button>
                                 <button
                                     onClick={() => setDirected(true)}
@@ -233,7 +237,7 @@ export function BuilderPanel({
                                             : 'text-ink-soft hover:text-ink'
                                     )}
                                 >
-                                    <ArrowRight size={13} /> Direcionada
+                                    <ArrowRight size={13} /> {text.directed}
                                 </button>
                             </div>
                         </div>
@@ -246,7 +250,7 @@ export function BuilderPanel({
                         icon={<Plus size={14} />}
                         onClick={handleAddEdge}
                     >
-                        Adicionar aresta
+                        {text.addEdge}
                     </Button>
 
                     {feedback ? <p className="text-state-reject text-[11px]">{feedback}</p> : null}
@@ -254,8 +258,7 @@ export function BuilderPanel({
                     {stats.isMixed ? (
                         <div className="border-state-frontier/25 bg-state-frontier/10 flex flex-col gap-2 rounded-lg border p-2.5">
                             <p className="text-ink-soft text-[11px] leading-relaxed">
-                                O grafo mistura arestas direcionadas e não direcionadas. Alguns
-                                algoritmos exigem um único tipo.
+                                {text.mixedWarning}
                             </p>
                             <div className="flex gap-1.5">
                                 <Button
@@ -264,7 +267,7 @@ export function BuilderPanel({
                                     className="flex-1"
                                     onClick={() => onSetAllDirected(true)}
                                 >
-                                    Todas direcionadas
+                                    {text.allDirected}
                                 </Button>
                                 <Button
                                     size="sm"
@@ -272,7 +275,7 @@ export function BuilderPanel({
                                     className="flex-1"
                                     onClick={() => onSetAllDirected(false)}
                                 >
-                                    Todas simples
+                                    {text.allUndirected}
                                 </Button>
                             </div>
                         </div>
@@ -282,8 +285,8 @@ export function BuilderPanel({
                 {graph.edges.length === 0 ? (
                     <EmptyState
                         icon={<Spline size={18} />}
-                        title="Nenhuma aresta ainda"
-                        description="Conecte dois vértices pelo canvas ou pelo formulário acima."
+                        title={text.noEdgesTitle}
+                        description={text.noEdgesDescription}
                     />
                 ) : (
                     <ul className="flex flex-col p-2">
@@ -310,8 +313,8 @@ export function BuilderPanel({
                                 <input
                                     value={edge.weight === undefined ? '' : String(edge.weight)}
                                     inputMode="decimal"
-                                    placeholder="sem peso"
-                                    title="Peso da aresta (deixe vazio para não usar peso)"
+                                    placeholder={text.noWeight}
+                                    title={text.weightTitle}
                                     onChange={(event) => {
                                         const raw = event.target.value.trim();
                                         if (raw === '') {
@@ -329,15 +332,18 @@ export function BuilderPanel({
                                     onClick={() =>
                                         onUpdateEdge(edge.id, { directed: !edge.directed })
                                     }
-                                    title="Alternar direção"
+                                    title={text.toggleDirection}
                                     className="shrink-0 cursor-pointer"
                                 >
                                     <Badge tone={edge.directed ? 'brand' : 'neutral'}>
-                                        {edge.directed ? 'direcionada' : 'simples'}
+                                        {edge.directed ? text.directedBadge : text.undirectedBadge}
                                     </Badge>
                                 </button>
                                 <IconButton
-                                    label={`Remover aresta ${labelOf(edge.source)} ${labelOf(edge.target)}`}
+                                    label={text.removeEdge(
+                                        labelOf(edge.source),
+                                        labelOf(edge.target)
+                                    )}
                                     size="sm"
                                     variant="danger"
                                     icon={<Trash2 size={14} />}

@@ -1,3 +1,5 @@
+import type { Locale } from '@/i18n/config';
+
 export type NodeId = string;
 
 export interface GraphNode {
@@ -75,29 +77,58 @@ export interface AlgorithmContext {
     startId: NodeId | null;
     endId: NodeId | null;
     order?: NodeId[];
+    locale: Locale;
 }
 
+export type AlgorithmId =
+    | 'bfs'
+    | 'dfs'
+    | 'kosaraju'
+    | 'fleury'
+    | 'prim'
+    | 'kruskal'
+    | 'dijkstra'
+    | 'bellman-ford'
+    | 'floyd-warshall'
+    | 'ford-fulkerson'
+    | 'edmonds-karp'
+    | 'dinic'
+    | 'kahn'
+    | 'topological-dfs'
+    | 'edmonds'
+    | 'greedy-coloring'
+    | 'welsh-powell';
+
 export type AlgorithmCategory =
-    | 'Busca em grafos'
-    | 'Conectividade'
-    | 'Grafos eulerianos'
-    | 'Árvore geradora mínima'
-    | 'Caminho mínimo'
-    | 'Fluxo máximo'
-    | 'Ordenação topológica'
-    | 'Emparelhamento'
-    | 'Coloração';
+    | 'search'
+    | 'connectivity'
+    | 'eulerian'
+    | 'spanning-tree'
+    | 'shortest-path'
+    | 'max-flow'
+    | 'topological-sort'
+    | 'matching'
+    | 'coloring';
 
 export interface AlgorithmDefinition {
-    id: string;
-    name: string;
-    shortName: string;
+    id: AlgorithmId;
     category: AlgorithmCategory;
-    tagline: string;
-    complexity: string;
     needsStart: boolean;
     needsEnd: boolean;
-    constraints: string[];
     validate: (context: AlgorithmContext) => string[];
     run: (context: AlgorithmContext) => AlgorithmTrace;
 }
+
+export type PresetId =
+    | 'weighted-undirected'
+    | 'strongly-connected'
+    | 'flow-network'
+    | 'negative-weights'
+    | 'unweighted'
+    | 'eulerian'
+    | 'semi-eulerian'
+    | 'bottleneck'
+    | 'precedence-dag'
+    | 'blossom-matching'
+    | 'vertex-coloring'
+    | 'welsh-powell-counterexample';

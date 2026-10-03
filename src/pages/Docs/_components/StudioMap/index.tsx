@@ -1,3 +1,5 @@
+import { useI18n } from '@/hooks/useI18n';
+import { cn } from '@/lib/utils/cn';
 import {
     ArrowRight,
     Eraser,
@@ -16,44 +18,6 @@ import {
     Wand2,
     type LucideIcon,
 } from 'lucide-react';
-import { cn } from '@/lib/utils/cn';
-
-const regions = [
-    {
-        title: 'Ferramentas de edição',
-        description: 'Selecionar e mover, adicionar vértice, conectar vértices e remover elemento.',
-    },
-    { title: 'Histórico', description: 'Desfazer, refazer e limpar o grafo inteiro.' },
-    {
-        title: 'Direção das novas arestas',
-        description: 'Define se as arestas criadas pelo canvas nascem simples ou direcionadas.',
-    },
-    {
-        title: 'Posicionamento',
-        description: 'Liga ou desliga a sugestão automática e reorganiza o desenho sob demanda.',
-    },
-    {
-        title: 'Dica contextual',
-        description: 'Explica como usar a ferramenta ativa. Aparece em telas a partir de 640 px.',
-    },
-    {
-        title: 'Canvas',
-        description: 'Área de desenho com grade pontilhada, arrasto, zoom e destaques da execução.',
-    },
-    {
-        title: 'Legenda',
-        description: 'Significado de cada cor aplicada a vértices e arestas durante a simulação.',
-    },
-    { title: 'Zoom', description: 'Aproximar, afastar e enquadrar o grafo inteiro na tela.' },
-    {
-        title: 'Abas do painel',
-        description: 'Alterna entre Construir, Executar e Passos, as três etapas do fluxo.',
-    },
-    {
-        title: 'Conteúdo da aba',
-        description: 'Formulários do grafo, catálogo de algoritmos ou o traço passo a passo.',
-    },
-];
 
 function Marker({ value, className }: { value: number; className?: string }) {
     return (
@@ -150,6 +114,11 @@ function MiniGraph() {
 }
 
 export function StudioMap() {
+    const { t } = useI18n();
+    const text = t.docs.anatomy;
+    const tabIcons = [Hammer, Play, ListChecks];
+    const tabs = text.mockTabs.map((label, index) => ({ label, icon: tabIcons[index] }));
+
     return (
         <figure className="flex flex-col gap-5">
             <div
@@ -164,7 +133,7 @@ export function StudioMap() {
                         <ToolGroup marker={4} icons={[Wand2, Sparkles]} />
                         <div className="bg-surface/90 border-line text-ink-faint relative hidden h-[26px] items-center rounded-md border px-2 text-[9px] md:flex">
                             <Marker value={5} className="-top-2 -left-2" />
-                            Arraste os vértices para reposicionar...
+                            {text.mockHint}
                         </div>
                     </div>
 
@@ -205,11 +174,7 @@ export function StudioMap() {
                 <div className="border-line bg-surface-sunken/40 flex flex-col gap-2.5 border-t p-3 sm:w-[38%] sm:border-t-0 sm:border-l">
                     <div className="bg-surface-sunken border-line relative flex gap-px rounded-lg border p-0.5">
                         <Marker value={9} className="-top-2 -left-2" />
-                        {[
-                            { icon: Hammer, label: 'Construir' },
-                            { icon: Play, label: 'Executar' },
-                            { icon: ListChecks, label: 'Passos' },
-                        ].map((tab, index) => (
+                        {tabs.map((tab, index) => (
                             <span
                                 key={tab.label}
                                 className={cn(
@@ -243,7 +208,7 @@ export function StudioMap() {
 
             <figcaption>
                 <ol className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-                    {regions.map((region, index) => (
+                    {text.regions.map((region, index) => (
                         <li key={region.title} className="flex gap-2.5">
                             <span className="bg-brand/10 text-brand mt-px flex size-5 shrink-0 items-center justify-center rounded-full font-mono text-[10px] font-semibold">
                                 {index + 1}

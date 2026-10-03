@@ -1,4 +1,5 @@
 import { Button } from '@/components/Button';
+import { useI18n } from '@/hooks/useI18n';
 import { ArrowRight, BookOpen } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -18,28 +19,22 @@ import {
     TableOfContents,
     type TocItem,
 } from './_components/TableOfContents';
-
-const tocItems: TocItem[] = [
-    { id: 'visao-geral', title: 'Visão geral' },
-    { id: 'primeiros-passos', title: 'Primeiros passos' },
-    { id: 'anatomia-do-estudio', title: 'Anatomia do estúdio' },
-    { id: 'canvas', title: 'Canvas e ferramentas' },
-    { id: 'aba-construir', title: 'Aba Construir' },
-    { id: 'aba-executar', title: 'Aba Executar' },
-    { id: 'aba-passos', title: 'Aba Passos' },
-    { id: 'algoritmos', title: 'Catálogo de algoritmos' },
-    { id: 'atalhos', title: 'Atalhos de teclado' },
-    { id: 'dados-e-preferencias', title: 'Dados e preferências' },
-    { id: 'perguntas-frequentes', title: 'Perguntas frequentes' },
-];
+import { docSections } from './sections';
 
 function scrollToSection(id: string, behavior: ScrollBehavior) {
     document.getElementById(id)?.scrollIntoView({ behavior, block: 'start' });
 }
 
 export function Docs() {
+    const { t, path } = useI18n();
     const { hash } = useLocation();
-    const [activeId, setActiveId] = useState<string | null>(tocItems[0].id);
+    const [activeId, setActiveId] = useState<string | null>(docSections[0].id);
+    const text = t.docs.hero;
+
+    const tocItems: TocItem[] = docSections.map((section) => ({
+        id: section.id,
+        title: t.docs.sections[section.key],
+    }));
 
     useEffect(() => {
         const sections = document.querySelectorAll<HTMLElement>('[data-doc-section]');
@@ -76,24 +71,22 @@ export function Docs() {
                 />
                 <div className="relative mx-auto w-full max-w-300 px-4 py-14 sm:px-6 sm:py-20">
                     <p className="text-ink-faint text-[11px] font-semibold tracking-wider uppercase">
-                        Documentação
+                        {text.eyebrow}
                     </p>
                     <h1 className="text-ink mt-3 max-w-3xl text-3xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-4xl">
-                        Como o Graph Labs funciona
+                        {text.title}
                     </h1>
                     <p className="text-ink-soft mt-4 max-w-2xl text-sm leading-relaxed text-pretty sm:text-base">
-                        Um guia completo do estúdio: como montar o grafo, configurar e executar cada
-                        algoritmo, ler o traço passo a passo e aproveitar os recursos que tornam a
-                        conferência de exercícios mais rápida.
+                        {text.description}
                     </p>
                     <div className="mt-8 flex flex-wrap gap-2.5">
-                        <Link to="/estudio">
+                        <Link to={path('studio')}>
                             <Button variant="primary" trailingIcon={<ArrowRight size={15} />}>
-                                Abrir o estúdio
+                                {text.openStudio}
                             </Button>
                         </Link>
-                        <Link to="/algoritmos">
-                            <Button icon={<BookOpen size={15} />}>Ver pseudocódigos</Button>
+                        <Link to={path('algorithms')}>
+                            <Button icon={<BookOpen size={15} />}>{text.viewPseudocode}</Button>
                         </Link>
                     </div>
                 </div>

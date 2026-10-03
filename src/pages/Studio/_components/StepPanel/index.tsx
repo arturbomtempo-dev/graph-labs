@@ -15,6 +15,7 @@ import { Card, CardHeader } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { IconButton } from '@/components/IconButton';
 import { playbackSpeeds } from '@/hooks/useAlgorithmRunner';
+import { useI18n } from '@/hooks/useI18n';
 import type { AlgorithmDefinition, AlgorithmStep, AlgorithmTrace } from '@/lib/graph/types';
 import { cn } from '@/lib/utils/cn';
 
@@ -57,13 +58,16 @@ export function StepPanel({
     onReset,
     controls,
 }: StepPanelProps) {
+    const { t, formatNumber } = useI18n();
+    const text = t.studio.steps;
+
     if (!trace || !currentStep) {
         return (
             <Card>
                 <EmptyState
                     icon={<ListChecks size={18} />}
-                    title="Nenhuma execução ainda"
-                    description="Escolha um algoritmo na aba Executar e inicie a simulação para acompanhar cada passo."
+                    title={text.emptyTitle}
+                    description={text.emptyDescription}
                 />
             </Card>
         );
@@ -78,10 +82,10 @@ export function StepPanel({
                 <div className="border-line flex items-center justify-between gap-2 border-b px-4 py-3">
                     <div className="min-w-0">
                         <p className="text-ink text-sm font-semibold tracking-tight">
-                            {algorithm.name}
+                            {t.algorithms[algorithm.id].name}
                         </p>
                         <p className="text-ink-soft text-xs">
-                            Passo {stepIndex + 1} de {totalSteps}
+                            {text.position(stepIndex + 1, totalSteps)}
                         </p>
                     </div>
                     <Button
@@ -90,7 +94,7 @@ export function StepPanel({
                         icon={<RotateCcw size={14} />}
                         onClick={onReset}
                     >
-                        Limpar
+                        {text.clear}
                     </Button>
                 </div>
 
@@ -104,34 +108,34 @@ export function StepPanel({
                 <div className="flex flex-col gap-3 p-3">
                     <div className="flex items-center justify-center gap-1">
                         <IconButton
-                            label="Primeiro passo"
+                            label={text.first}
                             size="sm"
                             icon={<ChevronFirst size={16} />}
                             onClick={controls.first}
                             disabled={stepIndex === 0}
                         />
                         <IconButton
-                            label="Passo anterior"
+                            label={text.previous}
                             size="sm"
                             icon={<ChevronLeft size={16} />}
                             onClick={controls.previous}
                             disabled={stepIndex === 0}
                         />
                         <IconButton
-                            label={isPlaying ? 'Pausar' : 'Reproduzir'}
+                            label={isPlaying ? text.pause : text.play}
                             variant="solid"
                             icon={isPlaying ? <Pause size={17} /> : <Play size={17} />}
                             onClick={controls.togglePlay}
                         />
                         <IconButton
-                            label="Próximo passo"
+                            label={text.next}
                             size="sm"
                             icon={<ChevronRight size={16} />}
                             onClick={controls.next}
                             disabled={isLastStep}
                         />
                         <IconButton
-                            label="Último passo"
+                            label={text.last}
                             size="sm"
                             icon={<ChevronLast size={16} />}
                             onClick={controls.last}
@@ -145,7 +149,7 @@ export function StepPanel({
                         max={Math.max(totalSteps - 1, 0)}
                         value={stepIndex}
                         onChange={(event) => onGoTo(Number(event.target.value))}
-                        aria-label="Navegar entre os passos"
+                        aria-label={text.seek}
                         className="accent-brand h-1 w-full cursor-pointer"
                     />
 
@@ -163,7 +167,7 @@ export function StepPanel({
                                             : 'text-ink-soft hover:text-ink'
                                     )}
                                 >
-                                    {speed.label}
+                                    {formatNumber(speed.factor)}×
                                 </button>
                             ))}
                         </div>
@@ -196,7 +200,7 @@ export function StepPanel({
                     <CardHeader title={list.title} />
                     <div className="p-3">
                         {list.items.length === 0 ? (
-                            <p className="text-ink-faint text-xs italic">vazio</p>
+                            <p className="text-ink-faint text-xs italic">{text.empty}</p>
                         ) : (
                             <div className="flex flex-wrap gap-1.5">
                                 {list.items.map((item, index) => (
@@ -265,7 +269,7 @@ export function StepPanel({
 
             {isLastStep && trace.conclusions.length > 0 ? (
                 <Card className="border-state-done/30 bg-state-done/5">
-                    <CardHeader title="Conclusões" />
+                    <CardHeader title={text.conclusions} />
                     <ul className="flex flex-col gap-2 p-4 pt-3">
                         {trace.conclusions.map((conclusion) => (
                             <li

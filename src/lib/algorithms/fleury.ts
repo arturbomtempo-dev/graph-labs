@@ -1,3 +1,4 @@
+import { getDictionary } from '@/i18n/dictionaries';
 import {
     hasDirectedEdges,
     nodeLabelMap,
@@ -7,7 +8,7 @@ import {
 } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, GraphEdge, NodeId, TraceTable } from '../graph/types';
-import { requireEdges, requireNodes } from './shared';
+import { requireEdges, requireNodes, traceText } from './shared';
 
 function degreeOf(edges: GraphEdge[], node: NodeId): number {
     return edges.reduce((total, edge) => {
@@ -45,62 +46,41 @@ function isBridge(edges: GraphEdge[], edge: GraphEdge, from: NodeId): boolean {
 
 export const fleury: AlgorithmDefinition = {
     id: 'fleury',
-    name: 'Método de Fleury',
-    shortName: 'Fleury',
-    category: 'Grafos eulerianos',
-    tagline:
-        'Constrói um trajeto euleriano caminhando pelo grafo e evitando atravessar uma ponte enquanto houver outra aresta disponível.',
-    complexity: 'O(m² )',
+    category: 'eulerian',
     needsStart: false,
     needsEnd: false,
-    constraints: [
-        'Exige grafo não direcionado e conexo',
-        'No máximo 2 vértices de grau ímpar',
-        'Ignora os pesos das arestas',
-    ],
     validate: (context) => {
         const errors = [...requireNodes(context), ...requireEdges(context)];
         const { graph, startId } = context;
+        const issues = getDictionary(context.locale).algorithms.fleury.issues;
 
         if (hasDirectedEdges(graph)) {
-            errors.push(
-                'O método de Fleury é definido para grafo não direcionado: converta todas as arestas para não direcionadas.'
-            );
+            errors.push(issues.undirectedOnly);
             return errors;
         }
 
         const odd = graph.nodes.filter((node) => degreeOf(graph.edges, node.id) % 2 === 1);
         if (odd.length > 2) {
-            errors.push(
-                `O grafo possui ${odd.length} vértices de grau ímpar (${odd
-                    .map((node) => node.label)
-                    .join(
-                        ', '
-                    )}). Um grafo conexo é euleriano se todos os graus forem pares e semi-euleriano se houver exatamente dois vértices de grau ímpar.`
-            );
+            errors.push(issues.tooManyOdd(odd.map((node) => node.label)));
         }
 
         const withEdges = graph.nodes.filter((node) => degreeOf(graph.edges, node.id) > 0);
         if (withEdges.length > 0) {
             const seen = reachable(graph.edges, withEdges[0].id);
             if (withEdges.some((node) => !seen.has(node.id))) {
-                errors.push(
-                    'O grafo não é conexo: o teorema de Euler exige um grafo conexo para que exista trajeto ou ciclo euleriano.'
-                );
+                errors.push(issues.disconnected);
             }
         }
 
         if (startId && odd.length > 0 && !odd.some((node) => node.id === startId)) {
-            errors.push(
-                `Com vértices de grau ímpar, o trajeto euleriano precisa começar em um deles: ${odd
-                    .map((node) => node.label)
-                    .join(' ou ')}.`
-            );
+            errors.push(issues.mustStartAtOdd(odd.map((node) => node.label)));
         }
 
         return errors;
     },
-    run: ({ graph, startId, order }) => {
+    run: ({ graph, startId, order, locale }) => {
+        const shared = traceText(locale);
+        const text = getDictionary(locale).algorithms.fleury.trace;
         const builder = createTraceBuilder(graph);
         const labels = nodeLabelMap(graph);
         const ordered = orderedNodes(graph, order);
@@ -122,10 +102,10 @@ export const fleury: AlgorithmDefinition = {
 
         const remainingTable = (highlight?: string): TraceTable => ({
             id: 'fleury-edges',
-            title: "Arestas restantes em E'",
+            title: text.remainingTitle,
             columns: [
-                { key: 'edge', label: 'Aresta' },
-                { key: 'status', label: 'Situação' },
+                { key: 'edge', label: shared.columns.edge },
+                { key: 'status', label: shared.columns.status },
             ],
             rows: graph.edges.map((edge) => ({
                 key: edge.id,
@@ -138,19 +118,19 @@ export const fleury: AlgorithmDefinition = {
                 cells: {
                     edge: `{${labels.get(edge.source)}, ${labels.get(edge.target)}}`,
                     status: usedEdges.includes(edge.id)
-                        ? `percorrida (${usedEdges.indexOf(edge.id) + 1}ª)`
-                        : "em E'",
+                        ? text.traversedStatus(usedEdges.indexOf(edge.id) + 1)
+                        : text.pendingStatus,
                 },
             })),
         });
 
         const degreeTable = (): TraceTable => ({
             id: 'fleury-degrees',
-            title: "Graus em G'",
+            title: text.degreesTitle,
             columns: [
-                { key: 'vertex', label: 'Vértice' },
-                { key: 'degree', label: "d(v) em G'" },
-                { key: 'original', label: 'd(v) em G' },
+                { key: 'vertex', label: shared.columns.vertex },
+                { key: 'degree', label: text.degreeInRemaining },
+                { key: 'original', label: text.degreeInOriginal },
             ],
             rows: ordered.map((node) => ({
                 key: node.id,
@@ -164,7 +144,7 @@ export const fleury: AlgorithmDefinition = {
         });
 
         const trailMetric = () => ({
-            label: 'Trajeto',
+            label: text.trailLabel,
             value: trail.map((id) => labels.get(id)).join(' / '),
         });
 
@@ -172,22 +152,21 @@ export const fleury: AlgorithmDefinition = {
             tables: [remainingTable(highlight), degreeTable()],
             metrics: [
                 trailMetric(),
-                { label: "Arestas restantes em E'", value: String(available.length) },
+                { label: text.remainingTitle, value: String(available.length) },
             ],
         });
 
         builder.setNode(start, 'active');
-        builder.setNodeBadge(start, 'início');
+        builder.setNodeBadge(start, text.startBadge);
 
         builder.commit({
-            title: `Inicialização: vértice inicial ${labels.get(start)}`,
+            title: text.initTitle(labels.get(start) ?? ''),
             description: isEulerian
-                ? `Todos os vértices têm grau par, portanto o grafo é euleriano e existe ciclo euleriano. G' começa igual a G e a caminhada parte de ${labels.get(start)}, escolhido livremente.`
-                : `Há exatamente ${odd.length} vértices de grau ímpar (${odd
-                      .map((node) => node.label)
-                      .join(
-                          ', '
-                      )}), portanto o grafo é semi-euleriano. A caminhada precisa partir de um deles: ${labels.get(start)}.`,
+                ? text.initEulerian(labels.get(start) ?? '')
+                : text.initSemiEulerian(
+                      odd.map((node) => node.label),
+                      labels.get(start) ?? ''
+                  ),
             ...snapshot(),
         });
 
@@ -206,7 +185,7 @@ export const fleury: AlgorithmDefinition = {
 
             if (incident.length === 1) {
                 chosen = incident[0];
-                reason = `${labels.get(current)} tem apenas uma aresta disponível em G', então ela é percorrida mesmo sendo ponte.`;
+                reason = text.onlyEdgeReason(labels.get(current) ?? '');
             } else {
                 const bridges = incident.filter((edge) => isBridge(available, edge, current));
                 const safe = incident.find((edge) => !bridges.includes(edge));
@@ -214,17 +193,18 @@ export const fleury: AlgorithmDefinition = {
                 const bridgeLabels = bridges.map(
                     (edge) => `{${labels.get(current)}, ${labels.get(otherEnd(edge, current))}}`
                 );
+                const chosenLabel = `{${labels.get(current)}, ${labels.get(otherEnd(chosen, current))}}`;
                 reason = safe
                     ? bridges.length > 0
-                        ? `Entre as ${incident.length} arestas disponíveis, ${bridgeLabels.join(', ')} ${bridges.length === 1 ? 'é ponte' : 'são pontes'} em G' e ${bridges.length === 1 ? 'é evitada' : 'são evitadas'}. Escolhe-se {${labels.get(current)}, ${labels.get(otherEnd(chosen, current))}}, que não é ponte.`
-                        : `Nenhuma das ${incident.length} arestas disponíveis é ponte em G', então qualquer uma serve. Escolhe-se {${labels.get(current)}, ${labels.get(otherEnd(chosen, current))}}.`
-                    : `Todas as arestas disponíveis são pontes em G', então uma delas precisa ser percorrida.`;
+                        ? text.avoidBridgesReason(incident.length, bridgeLabels, chosenLabel)
+                        : text.noBridgesReason(incident.length, chosenLabel)
+                    : text.allBridgesReason;
             }
 
             const next = otherEnd(chosen, current);
             builder.setEdge(chosen.id, 'active');
             builder.commit({
-                title: `Analisa as arestas incidentes a ${labels.get(current)}`,
+                title: text.analyzeTitle(labels.get(current) ?? ''),
                 description: reason,
                 ...snapshot(chosen.id),
             });
@@ -239,14 +219,14 @@ export const fleury: AlgorithmDefinition = {
             current = next;
 
             builder.commit({
-                title: `Caminha para ${labels.get(next)}`,
-                description: `A aresta é percorrida e removida de E': v ← ${labels.get(next)}. Restam ${available.length} aresta(s) em G'.`,
+                title: text.walkTitle(labels.get(next) ?? ''),
+                description: text.walkDescription(labels.get(next) ?? '', available.length),
                 ...snapshot(),
             });
         }
 
         builder.setNode(current, 'done');
-        builder.setNodeBadge(current, 'fim');
+        builder.setNodeBadge(current, text.endBadge);
 
         const closed = trail[0] === trail[trail.length - 1];
         const complete = usedEdges.length === graph.edges.length;
@@ -255,29 +235,22 @@ export const fleury: AlgorithmDefinition = {
         builder.commit({
             title: complete
                 ? closed
-                    ? 'Ciclo euleriano obtido'
-                    : 'Trajeto euleriano obtido'
-                : 'Caminhada interrompida',
+                    ? text.circuitTitle
+                    : text.trailTitle
+                : text.interruptedTitle,
             description: complete
-                ? `E' ficou vazio: todas as ${graph.edges.length} arestas foram percorridas exatamente uma vez.`
-                : `A caminhada terminou com ${available.length} aresta(s) ainda em E'.`,
+                ? text.completeDescription(graph.edges.length)
+                : text.interruptedDescription(available.length),
             ...snapshot(),
         });
 
         const conclusions = [
-            `${closed ? 'Ciclo' : 'Trajeto'} euleriano: ${trailText}.`,
-            `Foram percorridas ${usedEdges.length} de ${graph.edges.length} aresta(s), cada uma exatamente uma vez.`,
-        ];
-
-        conclusions.push(
+            text.trailConclusion(closed, trailText),
+            text.countConclusion(usedEdges.length, graph.edges.length),
             isEulerian
-                ? 'Todos os vértices têm grau par, portanto o grafo é euleriano: o trajeto é fechado e começa e termina no mesmo vértice.'
-                : `O grafo tem exatamente dois vértices de grau ímpar (${odd
-                      .map((node) => node.label)
-                      .join(
-                          ' e '
-                      )}), portanto é semi-euleriano: o trajeto é aberto e começa e termina neles.`
-        );
+                ? text.eulerianConclusion
+                : text.semiEulerianConclusion(odd.map((node) => node.label)),
+        ];
 
         return builder.build(conclusions);
     },

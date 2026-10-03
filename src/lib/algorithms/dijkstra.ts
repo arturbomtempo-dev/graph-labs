@@ -1,3 +1,4 @@
+import { getDictionary } from '@/i18n/dictionaries';
 import {
     buildAdjacency,
     formatDistance,
@@ -18,23 +19,14 @@ import {
     requireEdges,
     requireNodes,
     requireStart,
+    traceText,
 } from './shared';
 
 export const dijkstra: AlgorithmDefinition = {
     id: 'dijkstra',
-    name: 'Método de Dijkstra',
-    shortName: 'Dijkstra',
-    category: 'Caminho mínimo',
-    tagline:
-        '"Fecha" um vértice por iteração, sempre o de menor dist, e relaxa as arestas tensas que saem dele.',
-    complexity: 'O(n²)',
+    category: 'shortest-path',
     needsStart: true,
     needsEnd: false,
-    constraints: [
-        'Aceita arestas direcionadas e não direcionadas',
-        'Exige pesos não negativos',
-        'Baseia-se no princípio da relaxação',
-    ],
     validate: (context) => {
         const errors = [
             ...requireNodes(context),
@@ -42,13 +34,13 @@ export const dijkstra: AlgorithmDefinition = {
             ...requireStart(context),
         ];
         if (hasNegativeWeights(context.graph)) {
-            errors.push(
-                'O método de Dijkstra falha com arestas de peso negativo: use Bellman-Ford. Reponderar, adicionando uma constante a todas as arestas, também pode falhar.'
-            );
+            errors.push(getDictionary(context.locale).algorithms.dijkstra.issues.negativeWeights);
         }
         return errors;
     },
-    run: ({ graph, startId, endId, order }) => {
+    run: ({ graph, startId, endId, order, locale }) => {
+        const shared = traceText(locale);
+        const text = getDictionary(locale).algorithms.dijkstra.trace;
         const builder = createTraceBuilder(graph);
         const adjacency = buildAdjacency(graph, order);
         const labels = nodeLabelMap(graph);
@@ -71,7 +63,8 @@ export const dijkstra: AlgorithmDefinition = {
         const table = (highlight?: NodeId) =>
             distanceTable(graph, distance, pred, {
                 id: 'dijkstra-table',
-                title: 'dist e pred',
+                title: shared.shortestPath.tableTitle,
+                vertexLabel: shared.columns.vertex,
                 distanceLabel: 'dist',
                 parentLabel: 'pred',
                 highlight: highlight ? new Set([highlight]) : undefined,
@@ -80,7 +73,7 @@ export const dijkstra: AlgorithmDefinition = {
 
         const openList = () => ({
             id: 'open-set',
-            title: 'Vértices ainda não fechados',
+            title: text.openSetTitle,
             variant: 'set' as const,
             items: sortedNodes(graph)
                 .filter((node) => !closed.has(node.id))
@@ -91,8 +84,8 @@ export const dijkstra: AlgorithmDefinition = {
         });
 
         builder.commit({
-            title: 'Inicialização',
-            description: `dist[${labelOf(graph, root)}] = 0 na raiz e dist[v] = ∞ nos demais vértices, com pred[v] = nulo. Nenhum vértice foi fechado ainda, isto é, S = ∅.`,
+            title: shared.initialization,
+            description: text.initDescription(labelOf(graph, root)),
             tables: [table()],
             lists: [openList()],
         });
@@ -111,9 +104,8 @@ export const dijkstra: AlgorithmDefinition = {
 
             if (candidate === null) {
                 builder.commit({
-                    title: 'Vértices inalcançáveis',
-                    description:
-                        'Todos os vértices ainda não fechados têm dist = ∞: eles não são alcançáveis a partir da raiz e o algoritmo encerra.',
+                    title: text.unreachableTitle,
+                    description: text.unreachableDescription,
                     tables: [table()],
                     lists: [openList()],
                 });
@@ -129,8 +121,8 @@ export const dijkstra: AlgorithmDefinition = {
             if (linkingEdge) builder.setEdge(linkingEdge, 'done');
 
             builder.commit({
-                title: `Fecha ${labels.get(current)} com dist = ${formatWeight(best)}`,
-                description: `${labels.get(current)} é o vértice não fechado com o menor valor de dist, portanto entra em S. Como não há pesos negativos, dist[${labels.get(current)}] já é o peso definitivo do caminho mínimo desde a raiz.`,
+                title: text.closeTitle(labels.get(current) ?? '', formatWeight(best)),
+                description: text.closeDescription(labels.get(current) ?? ''),
                 tables: [table(current)],
                 lists: [openList()],
             });
@@ -148,15 +140,35 @@ export const dijkstra: AlgorithmDefinition = {
                     builder.setNode(entry.to, 'frontier');
                     builder.setNodeBadge(entry.to, formatWeight(relaxed));
                     builder.commit({
-                        title: `Aresta tensa (${labels.get(current)}, ${labels.get(entry.to)}): relaxada`,
-                        description: `dist[${labels.get(entry.to)}] = ${formatDistance(currentDistance)} > dist[${labels.get(current)}] + d = ${formatWeight(best)} + ${formatWeight(weightOf(entry.edge))} = ${formatWeight(relaxed)}. Logo dist[${labels.get(entry.to)}] ← ${formatWeight(relaxed)} e pred[${labels.get(entry.to)}] ← ${labels.get(current)}.`,
+                        title: shared.shortestPath.relaxedTitle(
+                            labels.get(current) ?? '',
+                            labels.get(entry.to) ?? ''
+                        ),
+                        description: shared.shortestPath.relaxedDescription({
+                            from: labels.get(current) ?? '',
+                            to: labels.get(entry.to) ?? '',
+                            current: formatDistance(currentDistance),
+                            fromDistance: formatWeight(best),
+                            weight: formatWeight(weightOf(entry.edge)),
+                            candidate: formatWeight(relaxed),
+                        }),
                         tables: [table(entry.to)],
                         lists: [openList()],
                     });
                 } else {
                     builder.commit({
-                        title: `Aresta (${labels.get(current)}, ${labels.get(entry.to)}) não está tensa`,
-                        description: `dist[${labels.get(current)}] + d = ${formatWeight(best)} + ${formatWeight(weightOf(entry.edge))} = ${formatWeight(relaxed)} não é menor que dist[${labels.get(entry.to)}] = ${formatDistance(currentDistance)}, então nada muda.`,
+                        title: text.notTenseTitle(
+                            labels.get(current) ?? '',
+                            labels.get(entry.to) ?? ''
+                        ),
+                        description: text.notTenseDescription({
+                            from: labels.get(current) ?? '',
+                            to: labels.get(entry.to) ?? '',
+                            current: formatDistance(currentDistance),
+                            fromDistance: formatWeight(best),
+                            weight: formatWeight(weightOf(entry.edge)),
+                            candidate: formatWeight(relaxed),
+                        }),
                         tables: [table(entry.to)],
                         lists: [openList()],
                     });
@@ -168,13 +180,16 @@ export const dijkstra: AlgorithmDefinition = {
         builder.resetEdgesWithState('frontier', 'idle');
 
         const conclusions = [
-            `dist[ ] final a partir da raiz ${labelOf(graph, root)}: ${sortedNodes(graph)
-                .map(
-                    (node) =>
-                        `${node.label} = ${formatDistance(distance.get(node.id) ?? Number.POSITIVE_INFINITY)}`
-                )
-                .join(', ')}.`,
-            'dist[ ] guarda apenas os pesos dos caminhos mínimos; os caminhos em si são recuperados percorrendo a lista de predecessores pred[ ].',
+            shared.shortestPath.finalDistances(
+                labelOf(graph, root),
+                sortedNodes(graph)
+                    .map(
+                        (node) =>
+                            `${node.label} = ${formatDistance(distance.get(node.id) ?? Number.POSITIVE_INFINITY)}`
+                    )
+                    .join(', ')
+            ),
+            text.predConclusion,
         ];
 
         if (endId && Number.isFinite(distance.get(endId) ?? Infinity)) {
@@ -183,17 +198,21 @@ export const dijkstra: AlgorithmDefinition = {
                 edgesAlongPath(graph, path).forEach((edgeId) => builder.setEdge(edgeId, 'path'));
                 path.forEach((nodeId) => builder.setNode(nodeId, 'path'));
                 conclusions.push(
-                    `Caminho mínimo até ${labelOf(graph, endId)}, obtido por pred[ ]: ${path.map((id) => labels.get(id)).join(' → ')} (peso ${formatDistance(distance.get(endId) ?? Infinity)}).`
+                    shared.shortestPath.pathConclusion(
+                        labelOf(graph, endId),
+                        path.map((id) => labels.get(id)).join(' → '),
+                        formatDistance(distance.get(endId) ?? Infinity)
+                    )
                 );
             }
         }
 
         builder.commit({
-            title: 'Caminhos mínimos calculados',
+            title: shared.shortestPath.doneTitle,
             description:
                 endId && Number.isFinite(distance.get(endId) ?? Infinity)
-                    ? `O caminho mínimo até ${labelOf(graph, endId)} está destacado em roxo.`
-                    : 'Todos os vértices alcançáveis foram fechados com seu valor definitivo de dist.',
+                    ? text.pathHighlighted(labelOf(graph, endId))
+                    : text.allClosedDescription,
             tables: [table()],
         });
 

@@ -1,5 +1,11 @@
+import { getDictionary } from '@/i18n/dictionaries';
+import type { Locale } from '@/i18n/config';
 import { formatDistance, nodeLabelMap, sortedNodes } from '../graph/helpers';
 import type { AlgorithmContext, Graph, NodeId, TraceRow, TraceTable } from '../graph/types';
+
+export function traceText(locale: Locale) {
+    return getDictionary(locale).trace;
+}
 
 export function labelOf(graph: Graph, id: NodeId | null | undefined): string {
     if (!id) return '-';
@@ -7,23 +13,24 @@ export function labelOf(graph: Graph, id: NodeId | null | undefined): string {
 }
 
 export function requireStart(context: AlgorithmContext): string[] {
-    if (!context.startId) return ['Selecione o vértice raiz.'];
+    if (!context.startId) return [traceText(context.locale).issues.selectRoot];
     return [];
 }
 
 export function requireNodes(context: AlgorithmContext): string[] {
-    if (context.graph.nodes.length === 0) return ['Adicione pelo menos um vértice ao grafo.'];
+    if (context.graph.nodes.length === 0) return [traceText(context.locale).issues.addVertex];
     return [];
 }
 
 export function requireEdges(context: AlgorithmContext): string[] {
-    if (context.graph.edges.length === 0) return ['Adicione pelo menos uma aresta ao grafo.'];
+    if (context.graph.edges.length === 0) return [traceText(context.locale).issues.addEdge];
     return [];
 }
 
 export interface DistanceTableOptions {
     id: string;
     title: string;
+    vertexLabel: string;
     distanceLabel?: string;
     parentLabel?: string;
     highlight?: Set<NodeId>;
@@ -58,7 +65,7 @@ export function distanceTable(
         id: options.id,
         title: options.title,
         columns: [
-            { key: 'vertex', label: 'Vértice' },
+            { key: 'vertex', label: options.vertexLabel },
             { key: 'distance', label: options.distanceLabel ?? 'dist' },
             { key: 'parent', label: options.parentLabel ?? 'pred' },
         ],

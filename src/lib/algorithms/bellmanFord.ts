@@ -1,3 +1,4 @@
+import { getDictionary } from '@/i18n/dictionaries';
 import {
     formatDistance,
     formatWeight,
@@ -16,6 +17,7 @@ import {
     requireEdges,
     requireNodes,
     requireStart,
+    traceText,
 } from './shared';
 
 interface Arc {
@@ -26,25 +28,17 @@ interface Arc {
 
 export const bellmanFord: AlgorithmDefinition = {
     id: 'bellman-ford',
-    name: 'Método de Bellman-Ford',
-    shortName: 'Bellman-Ford',
-    category: 'Caminho mínimo',
-    tagline:
-        'Programação dinâmica: examina todas as arestas a cada iteração, relaxando as que estiverem tensas, por |V(G)| − 1 iterações.',
-    complexity: 'O(n · m)',
+    category: 'shortest-path',
     needsStart: true,
     needsEnd: false,
-    constraints: [
-        'Admite arestas de peso negativo',
-        'Não admite ciclo de peso negativo',
-        'Detecta ciclo de peso negativo alcançável a partir da origem',
-    ],
     validate: (context) => [
         ...requireNodes(context),
         ...requireEdges(context),
         ...requireStart(context),
     ],
-    run: ({ graph, startId, endId, order }) => {
+    run: ({ graph, startId, endId, order, locale }) => {
+        const shared = traceText(locale);
+        const text = getDictionary(locale).algorithms['bellman-ford'].trace;
         const builder = createTraceBuilder(graph);
         const labels = nodeLabelMap(graph);
         const source = startId as NodeId;
@@ -73,7 +67,8 @@ export const bellmanFord: AlgorithmDefinition = {
         const table = (highlight?: NodeId) =>
             distanceTable(graph, distance, parent, {
                 id: 'bf-table',
-                title: 'dist e pred',
+                title: shared.shortestPath.tableTitle,
+                vertexLabel: shared.columns.vertex,
                 distanceLabel: 'dist',
                 parentLabel: 'pred',
                 highlight: highlight ? new Set([highlight]) : undefined,
@@ -81,7 +76,7 @@ export const bellmanFord: AlgorithmDefinition = {
 
         const arcList = () => ({
             id: 'arc-order',
-            title: 'Lista de arestas (ordem fixa de exame)',
+            title: text.arcsTitle,
             variant: 'queue' as const,
             items: arcs.map(
                 (arc) =>
@@ -90,8 +85,8 @@ export const bellmanFord: AlgorithmDefinition = {
         });
 
         builder.commit({
-            title: 'Inicialização',
-            description: `dist[${labelOf(graph, source)}] = 0 na origem, dist[v] = ∞ e pred[v] = nulo nos demais vértices. Cada aresta não direcionada é examinada nos dois sentidos.`,
+            title: shared.initialization,
+            description: text.initDescription(labelOf(graph, source)),
             tables: [table()],
             lists: [arcList()],
         });
@@ -102,11 +97,11 @@ export const bellmanFord: AlgorithmDefinition = {
         for (let round = 1; round <= rounds; round += 1) {
             let changed = false;
             builder.commit({
-                title: `Iteração ${round} de ${rounds}`,
-                description: `Nesta iteração todas as ${arcs.length} arestas são examinadas, sempre na mesma ordem, e as que estiverem tensas são relaxadas. Como qualquer caminho tem no máximo n − 1 arestas, ${rounds} iteração(ões) bastam.`,
+                title: text.iterationTitle(round, rounds),
+                description: text.iterationDescription(arcs.length, rounds),
                 tables: [table()],
                 lists: [arcList()],
-                metrics: [{ label: 'Iteração', value: `${round} / ${rounds}` }],
+                metrics: [{ label: text.iterationMetric, value: `${round} / ${rounds}` }],
             });
 
             for (const arc of arcs) {
@@ -126,11 +121,21 @@ export const bellmanFord: AlgorithmDefinition = {
                     builder.setNode(arc.to, 'frontier');
                     builder.setNodeBadge(arc.to, formatWeight(candidate));
                     builder.commit({
-                        title: `Aresta tensa (${labels.get(arc.from)}, ${labels.get(arc.to)}): relaxada`,
-                        description: `dist[${labels.get(arc.to)}] = ${formatDistance(currentDistance)} > dist[${labels.get(arc.from)}] + d = ${formatWeight(fromDistance)} + ${formatWeight(weightOf(arc.edge))} = ${formatWeight(candidate)}. Logo dist[${labels.get(arc.to)}] ← ${formatWeight(candidate)} e pred[${labels.get(arc.to)}] ← ${labels.get(arc.from)}.`,
+                        title: shared.shortestPath.relaxedTitle(
+                            labels.get(arc.from) ?? '',
+                            labels.get(arc.to) ?? ''
+                        ),
+                        description: shared.shortestPath.relaxedDescription({
+                            from: labels.get(arc.from) ?? '',
+                            to: labels.get(arc.to) ?? '',
+                            current: formatDistance(currentDistance),
+                            fromDistance: formatWeight(fromDistance),
+                            weight: formatWeight(weightOf(arc.edge)),
+                            candidate: formatWeight(candidate),
+                        }),
                         tables: [table(arc.to)],
                         lists: [arcList()],
-                        metrics: [{ label: 'Iteração', value: `${round} / ${rounds}` }],
+                        metrics: [{ label: text.iterationMetric, value: `${round} / ${rounds}` }],
                     });
                 }
             }
@@ -138,9 +143,8 @@ export const bellmanFord: AlgorithmDefinition = {
             builder.resetEdgesWithState('active', 'idle');
             if (!changed) {
                 builder.commit({
-                    title: `Iteração ${round} sem arestas tensas`,
-                    description:
-                        'Nenhuma aresta estava tensa nesta iteração, portanto não haverá atualizações nas próximas e o algoritmo pode terminar.',
+                    title: text.noTenseTitle(round),
+                    description: text.noTenseDescription,
                     tables: [table()],
                 });
                 break;
@@ -154,9 +158,8 @@ export const bellmanFord: AlgorithmDefinition = {
         });
 
         builder.commit({
-            title: 'Verificação de ciclo de peso negativo',
-            description:
-                'Uma iteração adicional é executada: se alguma aresta ainda estiver tensa, algum caminho teria n arestas ou mais, o que só é possível na presença de ciclo de peso negativo alcançável a partir da origem.',
+            title: text.checkTitle,
+            description: text.checkDescription,
             tables: [table()],
         });
 
@@ -170,8 +173,15 @@ export const bellmanFord: AlgorithmDefinition = {
                 builder.setEdge(arc.edge.id, 'reject');
                 builder.setNode(arc.to, 'reject');
                 builder.commit({
-                    title: `Ciclo de peso negativo detectado em (${labels.get(arc.from)}, ${labels.get(arc.to)})`,
-                    description: `A aresta continua tensa (${formatWeight(fromDistance)} + ${formatWeight(weightOf(arc.edge))} < ${formatDistance(distance.get(arc.to) ?? Infinity)}), o que só é possível se houver ciclo de peso negativo alcançável a partir da origem.`,
+                    title: text.negativeCycleTitle(
+                        labels.get(arc.from) ?? '',
+                        labels.get(arc.to) ?? ''
+                    ),
+                    description: text.negativeCycleDescription(
+                        formatWeight(fromDistance),
+                        formatWeight(weightOf(arc.edge)),
+                        formatDistance(distance.get(arc.to) ?? Infinity)
+                    ),
                     tables: [table(arc.to)],
                 });
             }
@@ -180,26 +190,25 @@ export const bellmanFord: AlgorithmDefinition = {
         const conclusions: string[] = [];
 
         if (negativeArcs.length > 0) {
-            conclusions.push(
-                'Existe ciclo de peso negativo alcançável a partir da origem: para os vértices afetados não há caminho mínimo, pois é sempre possível reduzir o peso dando mais uma volta no ciclo.'
-            );
+            conclusions.push(text.negativeCycleConclusion);
             builder.commit({
-                title: 'Resultado inválido por ciclo de peso negativo',
-                description: `${negativeArcs.length} aresta(s) continuam tensas após ${rounds} iteração(ões).`,
+                title: text.invalidTitle,
+                description: text.invalidDescription(negativeArcs.length, rounds),
                 tables: [table()],
             });
         } else {
             conclusions.push(
-                `dist[ ] final a partir de ${labelOf(graph, source)}: ${sortedNodes(graph)
-                    .map(
-                        (node) =>
-                            `${node.label} = ${formatDistance(distance.get(node.id) ?? Number.POSITIVE_INFINITY)}`
-                    )
-                    .join(', ')}.`
+                shared.shortestPath.finalDistances(
+                    labelOf(graph, source),
+                    sortedNodes(graph)
+                        .map(
+                            (node) =>
+                                `${node.label} = ${formatDistance(distance.get(node.id) ?? Number.POSITIVE_INFINITY)}`
+                        )
+                        .join(', ')
+                )
             );
-            conclusions.push(
-                `A última iteração com aresta tensa foi a de número ${lastRoundWithChange || 1}, de um total de ${rounds}. Sem ciclo de peso negativo, todo caminho mínimo é simples (não repete vértices).`
-            );
+            conclusions.push(text.lastRoundConclusion(lastRoundWithChange || 1, rounds));
 
             if (endId && Number.isFinite(distance.get(endId) ?? Infinity)) {
                 const path = pathFromParents(parent, endId);
@@ -209,15 +218,18 @@ export const bellmanFord: AlgorithmDefinition = {
                     );
                     path.forEach((nodeId) => builder.setNode(nodeId, 'path'));
                     conclusions.push(
-                        `Caminho mínimo até ${labelOf(graph, endId)}, obtido por pred[ ]: ${path.map((id) => labels.get(id)).join(' → ')}.`
+                        shared.shortestPath.pathConclusion(
+                            labelOf(graph, endId),
+                            path.map((id) => labels.get(id)).join(' → '),
+                            formatDistance(distance.get(endId) ?? Infinity)
+                        )
                     );
                 }
             }
 
             builder.commit({
-                title: 'Caminhos mínimos calculados',
-                description:
-                    'Nenhuma aresta está tensa, portanto o valor ótimo foi atingido e não há ciclo de peso negativo alcançável.',
+                title: shared.shortestPath.doneTitle,
+                description: text.doneDescription,
                 tables: [table()],
             });
         }

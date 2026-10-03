@@ -1,27 +1,20 @@
+import { getDictionary } from '@/i18n/dictionaries';
 import { buildAdjacency, nodeLabelMap, orderedNodes, sortedNodes } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, NodeId, TraceRow, TraceTable } from '../graph/types';
-import { labelOf, requireNodes, requireStart } from './shared';
+import { labelOf, requireNodes, requireStart, traceText } from './shared';
 
-type EdgeKind = 'Árvore (pai)' | 'Tio' | 'Irmão' | 'Primo';
+type EdgeKind = 'tree' | 'uncle' | 'sibling' | 'cousin';
 
 export const breadthFirstSearch: AlgorithmDefinition = {
     id: 'bfs',
-    name: 'Busca em Largura',
-    shortName: 'BFS',
-    category: 'Busca em grafos',
-    tagline:
-        'Escolhe sempre o vértice marcado menos recentemente alcançado, usando uma fila, e define o nível de cada vértice.',
-    complexity: 'O(n + m)',
+    category: 'search',
     needsStart: true,
     needsEnd: false,
-    constraints: [
-        'Aceita arestas direcionadas e não direcionadas',
-        'Ignora os pesos das arestas',
-        'Classifica as arestas em pai, tio, irmão e primo',
-    ],
     validate: (context) => [...requireNodes(context), ...requireStart(context)],
-    run: ({ graph, startId, order }) => {
+    run: ({ graph, startId, order, locale }) => {
+        const shared = traceText(locale);
+        const text = getDictionary(locale).algorithms.bfs.trace;
         const builder = createTraceBuilder(graph);
         const adjacency = buildAdjacency(graph, order);
         const labels = nodeLabelMap(graph);
@@ -61,12 +54,12 @@ export const breadthFirstSearch: AlgorithmDefinition = {
             }));
             return {
                 id: 'bfs-attributes',
-                title: 'Índice, nível e pai',
+                title: text.attributesTitle,
                 columns: [
-                    { key: 'vertex', label: 'Vértice' },
+                    { key: 'vertex', label: shared.columns.vertex },
                     { key: 'index', label: 'L' },
-                    { key: 'level', label: 'nível' },
-                    { key: 'parent', label: 'pai' },
+                    { key: 'level', label: text.levelColumn },
+                    { key: 'parent', label: shared.columns.parent },
                 ],
                 rows,
             };
@@ -74,28 +67,28 @@ export const breadthFirstSearch: AlgorithmDefinition = {
 
         const edgesTable = (): TraceTable => ({
             id: 'bfs-edges',
-            title: 'Classificação das arestas',
+            title: shared.edgeClassification,
             columns: [
-                { key: 'edge', label: 'Aresta' },
-                { key: 'kind', label: 'Tipo' },
+                { key: 'edge', label: shared.columns.edge },
+                { key: 'kind', label: shared.columns.type },
             ],
             rows: graph.edges
                 .filter((edge) => classification.has(edge.id))
                 .map((edge) => ({
                     key: edge.id,
-                    emphasis: classification.get(edge.id) === 'Árvore (pai)' ? 'done' : undefined,
+                    emphasis: classification.get(edge.id) === 'tree' ? 'done' : undefined,
                     cells: {
                         edge: edge.directed
                             ? `(${labels.get(edge.source)}, ${labels.get(edge.target)})`
                             : `{${labels.get(edge.source)}, ${labels.get(edge.target)}}`,
-                        kind: classification.get(edge.id) ?? '',
+                        kind: text.edgeKinds[classification.get(edge.id) as EdgeKind],
                     },
                 })),
         });
 
         const queueList = () => ({
             id: 'queue',
-            title: 'Fila',
+            title: shared.queue,
             variant: 'queue' as const,
             items: queue.map((id) => labels.get(id) ?? ''),
         });
@@ -106,9 +99,8 @@ export const breadthFirstSearch: AlgorithmDefinition = {
         });
 
         builder.commit({
-            title: 'Inicialização',
-            description:
-                'Todos os vértices começam não marcados: L[v] = 0, nível[v] = 0 e pai[v] = nulo. O contador global t começa em 0.',
+            title: shared.initialization,
+            description: text.initDescription,
             ...snapshot(),
         });
 
@@ -118,15 +110,15 @@ export const breadthFirstSearch: AlgorithmDefinition = {
             level.set(source, 0);
             queue.push(source);
             builder.setNode(source, 'frontier');
-            builder.setNodeBadge(source, 'nível 0');
+            builder.setNodeBadge(source, text.levelBadge(0));
 
             builder.commit({
                 title: isRoot
-                    ? `Raiz da busca: ${labelOf(graph, source)}`
-                    : `Nova raiz: ${labelOf(graph, source)}`,
+                    ? text.rootTitle(labelOf(graph, source))
+                    : text.newRootTitle(labelOf(graph, source)),
                 description: isRoot
-                    ? `${labelOf(graph, source)} é a raiz da busca: recebe L = ${time}, nível 0 e entra na fila.`
-                    : `${labelOf(graph, source)} continua com L = 0 após a busca anterior, então inicia uma nova árvore de largura com nível 0.`,
+                    ? text.rootDescription(labelOf(graph, source), time)
+                    : text.newRootDescription(labelOf(graph, source)),
                 ...snapshot(source),
             });
 
@@ -137,10 +129,13 @@ export const breadthFirstSearch: AlgorithmDefinition = {
                 visitOrder.push(labels.get(current) ?? '');
 
                 builder.commit({
-                    title: `Remove ${labelOf(graph, current)} da fila`,
-                    description: `${labelOf(graph, current)} sai da fila (nível ${level.get(current)}) e sua vizinhança Γ(${labelOf(graph, current)}) passa a ser examinada em ordem alfabética.`,
+                    title: text.dequeueTitle(labelOf(graph, current)),
+                    description: text.dequeueDescription(
+                        labelOf(graph, current),
+                        level.get(current) ?? 0
+                    ),
                     ...snapshot(current),
-                    metrics: [{ label: 'Ordem de visita', value: visitOrder.join(' → ') }],
+                    metrics: [{ label: shared.visitOrder, value: visitOrder.join(' → ') }],
                 });
 
                 for (const entry of adjacency.get(current) ?? []) {
@@ -152,14 +147,22 @@ export const breadthFirstSearch: AlgorithmDefinition = {
                         time += 1;
                         index.set(neighbour, time);
                         queue.push(neighbour);
-                        classification.set(entry.edge.id, 'Árvore (pai)');
+                        classification.set(entry.edge.id, 'tree');
                         builder.setNode(neighbour, 'frontier');
-                        builder.setNodeBadge(neighbour, `nível ${level.get(neighbour)}`);
+                        builder.setNodeBadge(neighbour, text.levelBadge(level.get(neighbour) ?? 0));
                         builder.setEdge(entry.edge.id, 'done');
 
                         builder.commit({
-                            title: `Aresta de árvore (pai) {${labelOf(graph, current)}, ${labelOf(graph, neighbour)}}`,
-                            description: `${labelOf(graph, neighbour)} tinha L = 0, portanto é visitado pela 1ª vez: pai[${labelOf(graph, neighbour)}] = ${labelOf(graph, current)}, nível = nível[${labelOf(graph, current)}] + 1 = ${level.get(neighbour)} e L = ${time}. O vértice entra na fila.`,
+                            title: text.treeEdgeTitle(
+                                labelOf(graph, current),
+                                labelOf(graph, neighbour)
+                            ),
+                            description: text.treeEdgeDescription(
+                                labelOf(graph, current),
+                                labelOf(graph, neighbour),
+                                level.get(neighbour) ?? 0,
+                                time
+                            ),
                             ...snapshot(neighbour),
                         });
                         continue;
@@ -172,34 +175,43 @@ export const breadthFirstSearch: AlgorithmDefinition = {
                     const sameParent = parent.get(current) === parent.get(neighbour);
                     const laterIndex = (index.get(neighbour) ?? 0) > (index.get(current) ?? 0);
 
-                    let kind: EdgeKind | null = null;
+                    let kind: Exclude<EdgeKind, 'tree'> | null = null;
                     if (neighbourLevel === currentLevel + 1) {
-                        kind = 'Tio';
+                        kind = 'uncle';
                     } else if (neighbourLevel === currentLevel && laterIndex) {
-                        kind = sameParent ? 'Irmão' : 'Primo';
+                        kind = sameParent ? 'sibling' : 'cousin';
                     }
 
                     if (!kind) continue;
 
                     classification.set(entry.edge.id, kind);
-                    builder.setEdge(entry.edge.id, kind === 'Tio' ? 'frontier' : 'reject');
+                    builder.setEdge(entry.edge.id, kind === 'uncle' ? 'frontier' : 'reject');
 
                     const reason =
-                        kind === 'Tio'
-                            ? `nível[${labelOf(graph, neighbour)}] = nível[${labelOf(graph, current)}] + 1, mas pai[${labelOf(graph, neighbour)}] ≠ ${labelOf(graph, current)}`
-                            : `nível[${labelOf(graph, neighbour)}] = nível[${labelOf(graph, current)}] e pai[${labelOf(graph, current)}] ${sameParent ? '=' : '≠'} pai[${labelOf(graph, neighbour)}]`;
+                        kind === 'uncle'
+                            ? text.uncleReason(labelOf(graph, current), labelOf(graph, neighbour))
+                            : text.sameLevelReason(
+                                  labelOf(graph, current),
+                                  labelOf(graph, neighbour),
+                                  sameParent
+                              );
 
                     builder.commit({
-                        title: `Aresta de ${kind.toLowerCase()}`,
-                        description: `${labelOf(graph, neighbour)} já estava marcado, e ${reason}. Logo {${labelOf(graph, current)}, ${labelOf(graph, neighbour)}} é aresta de ${kind.toLowerCase()} e não pertence à árvore de largura.`,
+                        title: text.classifiedTitle(kind),
+                        description: text.classifiedDescription(
+                            labelOf(graph, current),
+                            labelOf(graph, neighbour),
+                            reason,
+                            kind
+                        ),
                         ...snapshot(neighbour),
                     });
                 }
 
                 builder.setNode(current, 'done');
                 builder.commit({
-                    title: `${labelOf(graph, current)} explorado`,
-                    description: `Todas as arestas incidentes a ${labelOf(graph, current)} foram exploradas, portanto o vértice está explorado.`,
+                    title: text.exploredTitle(labelOf(graph, current)),
+                    description: text.exploredDescription(labelOf(graph, current)),
                     ...snapshot(),
                 });
             }
@@ -213,9 +225,7 @@ export const breadthFirstSearch: AlgorithmDefinition = {
 
         builder.resetEdgesWithState('active', 'idle');
 
-        const treeEdges = graph.edges.filter(
-            (edge) => classification.get(edge.id) === 'Árvore (pai)'
-        );
+        const treeEdges = graph.edges.filter((edge) => classification.get(edge.id) === 'tree');
         const reachable = graph.nodes.filter(
             (node) => node.id === root || parent.get(node.id) !== null
         );
@@ -224,29 +234,28 @@ export const breadthFirstSearch: AlgorithmDefinition = {
         );
 
         builder.commit({
-            title: 'Busca concluída',
+            title: shared.searchComplete,
             description:
                 unreachable.length > 0
-                    ? `A fila está vazia. ${unreachable.length} vértice(s) não foram alcançados a partir da raiz, então a busca produziu mais de uma árvore de largura.`
-                    : 'A fila está vazia e todos os vértices foram alcançados a partir da raiz.',
+                    ? text.completeWithUnreachable(unreachable.length)
+                    : text.completeAll,
             ...snapshot(),
-            metrics: [{ label: 'Ordem de visita', value: visitOrder.join(' → ') }],
+            metrics: [{ label: shared.visitOrder, value: visitOrder.join(' → ') }],
         });
 
         const conclusions = [
-            `Ordem de visita: ${visitOrder.join(' → ')}.`,
-            `A árvore de largura é formada por todos os vértices e pelas arestas de árvore (ou pai), ${treeEdges.length} no total. nível[v] é a distância, em número de arestas, entre a raiz da busca e v.`,
+            text.visitOrderConclusion(visitOrder.join(' → ')),
+            text.treeConclusion(treeEdges.length),
         ];
         if (unreachable.length > 0) {
             conclusions.push(
-                `Não alcançados a partir de ${labelOf(graph, root)}: ${unreachable
-                    .map((node) => node.label)
-                    .join(', ')}. Cada um deles iniciou uma nova árvore de largura.`
+                text.unreachableConclusion(
+                    labelOf(graph, root),
+                    unreachable.map((node) => node.label).join(', ')
+                )
             );
         } else if (reachable.length === graph.nodes.length) {
-            conclusions.push(
-                'Todos os vértices foram alcançados a partir da raiz: a busca produziu uma única árvore de largura.'
-            );
+            conclusions.push(text.singleTreeConclusion);
         }
 
         return builder.build(conclusions);

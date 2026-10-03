@@ -1,4 +1,4 @@
-import type { AlgorithmDefinition } from '../graph/types';
+import type { AlgorithmCategory, AlgorithmDefinition, AlgorithmId } from '../graph/types';
 import { bellmanFord } from './bellmanFord';
 import { breadthFirstSearch } from './breadthFirstSearch';
 import { depthFirstSearch } from './depthFirstSearch';
@@ -39,6 +39,10 @@ export const algorithms: AlgorithmDefinition[] = [
 
 export const algorithmsById = new Map(algorithms.map((algorithm) => [algorithm.id, algorithm]));
 
-export function findAlgorithm(id: string): AlgorithmDefinition | undefined {
+export const algorithmCategories: AlgorithmCategory[] = [
+    ...new Set(algorithms.map((algorithm) => algorithm.category)),
+];
+
+export function findAlgorithm(id: AlgorithmId): AlgorithmDefinition | undefined {
     return algorithmsById.get(id);
 }

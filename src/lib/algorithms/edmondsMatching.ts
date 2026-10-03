@@ -1,33 +1,24 @@
+import { getDictionary } from '@/i18n/dictionaries';
 import { hasDirectedEdges, nodeLabelMap, orderedNodes } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, NodeId, TraceTable } from '../graph/types';
-import { requireEdges, requireNodes } from './shared';
+import { requireEdges, requireNodes, traceText } from './shared';
 
 export const edmondsMatching: AlgorithmDefinition = {
     id: 'edmonds',
-    name: 'Método de Edmonds',
-    shortName: 'Edmonds',
-    category: 'Emparelhamento',
-    tagline:
-        'Busca caminhos M-aumentantes entre vértices expostos, contraindo os botões (blossoms) que aparecem, até que não exista mais nenhum.',
-    complexity: 'O(n² · m)',
+    category: 'matching',
     needsStart: false,
     needsEnd: false,
-    constraints: [
-        'Exige grafo não direcionado',
-        'Ignora os pesos das arestas',
-        'Trata grafo genérico, não apenas bipartido',
-    ],
     validate: (context) => {
         const errors = [...requireNodes(context), ...requireEdges(context)];
         if (hasDirectedEdges(context.graph)) {
-            errors.push(
-                'Emparelhamento é definido para grafo não direcionado: converta todas as arestas para não direcionadas.'
-            );
+            errors.push(getDictionary(context.locale).algorithms.edmonds.issues.undirectedOnly);
         }
         return errors;
     },
-    run: ({ graph, order }) => {
+    run: ({ graph, order, locale }) => {
+        const shared = traceText(locale);
+        const text = getDictionary(locale).algorithms.edmonds.trace;
         const builder = createTraceBuilder(graph);
         const labels = nodeLabelMap(graph);
         const nodes = orderedNodes(graph, order);
@@ -59,11 +50,11 @@ export const edmondsMatching: AlgorithmDefinition = {
 
         const matchingTable = (): TraceTable => ({
             id: 'edmonds-matching',
-            title: 'Emparelhamento M',
+            title: text.matchingTitle,
             columns: [
-                { key: 'vertex', label: 'Vértice' },
-                { key: 'partner', label: 'Parceiro em M' },
-                { key: 'status', label: 'Situação' },
+                { key: 'vertex', label: shared.columns.vertex },
+                { key: 'partner', label: text.partnerColumn },
+                { key: 'status', label: shared.columns.status },
             ],
             rows: nodes.map((node, i) => ({
                 key: node.id,
@@ -71,7 +62,7 @@ export const edmondsMatching: AlgorithmDefinition = {
                 cells: {
                     vertex: node.label,
                     partner: match[i] === -1 ? '-' : name(match[i]),
-                    status: match[i] === -1 ? 'exposto' : 'coberto',
+                    status: match[i] === -1 ? text.exposedStatus : text.coveredStatus,
                 },
             })),
         });
@@ -84,7 +75,7 @@ export const edmondsMatching: AlgorithmDefinition = {
             nodes.forEach((node, i) => {
                 if (match[i] === -1) {
                     builder.setNode(node.id, 'idle');
-                    builder.setNodeBadge(node.id, 'exposto');
+                    builder.setNodeBadge(node.id, text.exposedStatus);
                     return;
                 }
                 builder.setNode(node.id, 'done');
@@ -104,14 +95,13 @@ export const edmondsMatching: AlgorithmDefinition = {
 
         const metrics = () => [
             { label: '|M|', value: String(match.filter((value) => value !== -1).length / 2) },
-            { label: 'Vértices expostos', value: String(exposedCount()) },
+            { label: text.exposedMetric, value: String(exposedCount()) },
         ];
 
         paint();
         builder.commit({
-            title: 'Inicialização: M = ∅',
-            description:
-                'O emparelhamento começa vazio, portanto todos os vértices estão expostos (livres). Enquanto existir caminho M-aumentante, M pode crescer.',
+            title: text.initTitle,
+            description: text.initDescription,
             tables: [matchingTable()],
             metrics: metrics(),
         });
@@ -186,16 +176,19 @@ export const edmondsMatching: AlgorithmDefinition = {
                             if (edge) builder.setEdge(edge.id, 'reject');
                             contracted.forEach((i) => {
                                 builder.setNode(nodes[i].id, 'reject');
-                                builder.setNodeBadge(nodes[i].id, `botão ${name(blossomBase)}`);
+                                builder.setNodeBadge(
+                                    nodes[i].id,
+                                    text.blossomBadge(name(blossomBase))
+                                );
                             });
 
                             builder.commit({
-                                title: `Botão detectado e contraído em ${name(blossomBase)}`,
-                                description: `A aresta {${name(v)}, ${name(to)}} liga dois vértices a distância par da raiz da mesma árvore, formando um ciclo de tamanho ímpar. O botão { ${contracted
-                                    .map((i) => name(i))
-                                    .join(
-                                        ', '
-                                    )} } é contraído em um pseudovértice com base ${name(blossomBase)}; todos os seus vértices passam a contar como pares.`,
+                                title: text.blossomTitle(name(blossomBase)),
+                                description: text.blossomDescription(
+                                    `{${name(v)}, ${name(to)}}`,
+                                    contracted.map((i) => name(i)).join(', '),
+                                    name(blossomBase)
+                                ),
                                 tables: [matchingTable()],
                                 metrics: metrics(),
                             });
@@ -212,8 +205,8 @@ export const edmondsMatching: AlgorithmDefinition = {
                         if (edge) builder.setEdge(edge.id, 'active');
                         builder.setNode(nodes[to].id, 'path');
                         builder.commit({
-                            title: `Caminho M-aumentante encontrado até ${name(to)}`,
-                            description: `${name(to)} está exposto e foi alcançado por um caminho M-alternante que parte da raiz exposta ${name(root)}. Como o caminho começa e termina em vértices expostos, ele é M-aumentante, e todo caminho M-aumentante tem tamanho ímpar.`,
+                            title: text.augmentingTitle(name(to)),
+                            description: text.augmentingDescription(name(to), name(root)),
                             tables: [matchingTable()],
                             metrics: metrics(),
                         });
@@ -230,8 +223,8 @@ export const edmondsMatching: AlgorithmDefinition = {
                     builder.setNode(nodes[partner].id, 'active');
 
                     builder.commit({
-                        title: `Floresta cresce por {${name(v)}, ${name(to)}} e {${name(to)}, ${name(partner)}} ∈ M`,
-                        description: `${name(to)} ainda não estava na floresta. A aresta {${name(v)}, ${name(to)}} entra na árvore e, junto com ela, a aresta {${name(to)}, ${name(partner)}} de M. ${name(to)} fica a distância ímpar da raiz e ${name(partner)} a distância par, podendo continuar a busca.`,
+                        title: text.growTitle(name(v), name(to), name(partner)),
+                        description: text.growDescription(name(v), name(to), name(partner)),
                         tables: [matchingTable()],
                         metrics: metrics(),
                     });
@@ -262,10 +255,10 @@ export const edmondsMatching: AlgorithmDefinition = {
 
             paint();
             builder.setNode(nodes[root].id, 'active');
-            builder.setNodeBadge(nodes[root].id, 'raiz');
+            builder.setNodeBadge(nodes[root].id, text.rootBadge);
             builder.commit({
-                title: `Árvore M-alternante com raiz em ${name(root)}`,
-                description: `${name(root)} está exposto, então uma árvore M-alternante é iniciada nele. A busca procura um caminho M-alternante que termine em outro vértice exposto.`,
+                title: text.treeTitle(name(root)),
+                description: text.treeDescription(name(root)),
                 tables: [matchingTable()],
                 metrics: metrics(),
             });
@@ -275,8 +268,8 @@ export const edmondsMatching: AlgorithmDefinition = {
             if (endpoint === -1) {
                 paint();
                 builder.commit({
-                    title: `Nenhum caminho M-aumentante a partir de ${name(root)}`,
-                    description: `A árvore M-alternante com raiz em ${name(root)} foi totalmente explorada sem alcançar outro vértice exposto. ${name(root)} permanece exposto no emparelhamento final.`,
+                    title: text.noPathTitle(name(root)),
+                    description: text.noPathDescription(name(root)),
                     tables: [matchingTable()],
                     metrics: metrics(),
                 });
@@ -288,8 +281,12 @@ export const edmondsMatching: AlgorithmDefinition = {
             paint();
 
             builder.commit({
-                title: `M ← M ⊕ EP, com |M| = ${match.filter((value) => value !== -1).length / 2}`,
-                description: `A diferença simétrica retira de M as arestas do caminho que estavam em M e acrescenta as que não estavam. As arestas de M ao longo do caminho passam a ser ${changed.join(', ')}, e ${name(root)} e ${name(endpoint)} deixam de estar expostos. Pelo teorema de Berge, M cresceu em exatamente uma aresta.`,
+                title: text.augmentTitle(match.filter((value) => value !== -1).length / 2),
+                description: text.augmentDescription(
+                    changed.join(', '),
+                    name(root),
+                    name(endpoint)
+                ),
                 tables: [matchingTable()],
                 metrics: metrics(),
             });
@@ -300,8 +297,8 @@ export const edmondsMatching: AlgorithmDefinition = {
         const exposed = nodes.filter((_, i) => match[i] === -1);
 
         builder.commit({
-            title: 'Emparelhamento máximo obtido',
-            description: `Não existe mais caminho M-aumentante em G, portanto, pelo teorema de Berge, M tem cardinalidade máxima: |M| = ${matchedPairs}.`,
+            title: text.maximumTitle,
+            description: text.maximumDescription(matchedPairs),
             tables: [matchingTable()],
             metrics: metrics(),
         });
@@ -316,15 +313,14 @@ export const edmondsMatching: AlgorithmDefinition = {
         });
 
         return builder.build([
-            `Emparelhamento máximo com |M| = ${matchedPairs}: ${pairs.join(', ') || '-'}.`,
-            `Foram realizados ${augmentations} aumento(s) a partir de M = ∅. Cada caminho M-aumentante encontrado aumenta |M| em exatamente uma unidade.`,
+            text.matchingConclusion(matchedPairs, pairs.join(', ') || '-'),
+            text.augmentationsConclusion(augmentations),
             exposed.length === 0
-                ? 'Todos os vértices estão cobertos, portanto M é um casamento perfeito (ou completo).'
-                : `Restam ${exposed.length} vértice(s) exposto(s) (${exposed
-                      .map((node) => node.label)
-                      .join(
-                          ', '
-                      )}): emparelhamento máximo não implica em todos os vértices saturados.`,
+                ? text.perfectConclusion
+                : text.exposedConclusion(
+                      exposed.length,
+                      exposed.map((node) => node.label).join(', ')
+                  ),
         ]);
     },
 };

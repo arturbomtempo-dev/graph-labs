@@ -1,15 +1,19 @@
+import { useI18n } from '@/hooks/useI18n';
+import type { ElementState } from '@/lib/graph/types';
 import { cn } from '@/lib/utils/cn';
 
-const items = [
-    { label: 'Não explorado', dot: 'bg-line-strong' },
-    { label: 'Marcado', dot: 'bg-state-frontier' },
-    { label: 'Em análise', dot: 'bg-state-active' },
-    { label: 'Explorado / na solução', dot: 'bg-state-done' },
-    { label: 'Descartado', dot: 'bg-state-reject' },
-    { label: 'Caminho', dot: 'bg-state-path' },
+const items: { state: ElementState; dot: string }[] = [
+    { state: 'idle', dot: 'bg-line-strong' },
+    { state: 'frontier', dot: 'bg-state-frontier' },
+    { state: 'active', dot: 'bg-state-active' },
+    { state: 'done', dot: 'bg-state-done' },
+    { state: 'reject', dot: 'bg-state-reject' },
+    { state: 'path', dot: 'bg-state-path' },
 ];
 
 export function CanvasLegend({ className }: { className?: string }) {
+    const { t } = useI18n();
+
     return (
         <div
             className={cn(
@@ -20,11 +24,11 @@ export function CanvasLegend({ className }: { className?: string }) {
         >
             {items.map((item) => (
                 <span
-                    key={item.label}
+                    key={item.state}
                     className="text-ink-soft flex items-center gap-1.5 text-[11px]"
                 >
                     <span className={cn('size-2 rounded-full', item.dot)} />
-                    {item.label}
+                    {t.studio.legend[item.state]}
                 </span>
             ))}
         </div>

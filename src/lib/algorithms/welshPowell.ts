@@ -1,34 +1,25 @@
+import { getDictionary } from '@/i18n/dictionaries';
 import { buildAdjacency, hasDirectedEdges, orderComparator, orderedNodes } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, NodeId } from '../graph/types';
 import { colorTable, undirectedDegrees } from './greedyColoring';
-import { requireNodes } from './shared';
+import { requireNodes, traceText } from './shared';
 
 export const welshPowell: AlgorithmDefinition = {
     id: 'welsh-powell',
-    name: 'Método de Welsh-Powell',
-    shortName: 'Welsh-Powell',
-    category: 'Coloração',
-    tagline:
-        'Ordena os vértices em ordem não crescente de graus e colore, com uma mesma cor, todos os que não estiverem conectados a um vértice já colorido com ela.',
-    complexity: 'O(n² )',
+    category: 'coloring',
     needsStart: false,
     needsEnd: false,
-    constraints: [
-        'Exige grafo não direcionado',
-        'Coloração aproximada, não necessariamente mínima',
-        'Costuma usar menos cores que o método guloso',
-    ],
     validate: (context) => {
         const errors = [...requireNodes(context)];
         if (hasDirectedEdges(context.graph)) {
-            errors.push(
-                'A coloração de vértices é definida para grafo não direcionado: converta todas as arestas para não direcionadas.'
-            );
+            errors.push(traceText(context.locale).coloring.undirectedOnly);
         }
         return errors;
     },
-    run: ({ graph, order }) => {
+    run: ({ graph, order, locale }) => {
+        const coloring = traceText(locale).coloring;
+        const text = getDictionary(locale).algorithms['welsh-powell'].trace;
         const builder = createTraceBuilder(graph);
         const adjacency = buildAdjacency(graph, order);
         const alphabetical = orderedNodes(graph, order);
@@ -45,9 +36,9 @@ export const welshPowell: AlgorithmDefinition = {
             new Set((adjacency.get(node) ?? []).map((entry) => entry.to));
 
         const snapshot = (highlight?: NodeId, usedColors = 0) => ({
-            tables: [colorTable('wp-colors', sequence, color, degree, highlight)],
+            tables: [colorTable('wp-colors', sequence, color, degree, locale, highlight)],
             metrics: [
-                { label: 'Cores utilizadas', value: String(usedColors) },
+                { label: coloring.colorsUsed, value: String(usedColors) },
                 {
                     label: 'Δ(G)',
                     value: String(Math.max(0, ...sequence.map((n) => degree.get(n.id) ?? 0))),
@@ -56,10 +47,10 @@ export const welshPowell: AlgorithmDefinition = {
         });
 
         builder.commit({
-            title: 'Passo 1: ordenação por grau',
-            description: `Os vértices são ordenados em ordem não crescente de graus: ${sequence
-                .map((node) => `${node.label} (d = ${degree.get(node.id)})`)
-                .join(', ')}.`,
+            title: text.sortTitle,
+            description: text.sortDescription(
+                sequence.map((node) => `${node.label} (d = ${degree.get(node.id)})`).join(', ')
+            ),
             ...snapshot(),
         });
 
@@ -70,8 +61,8 @@ export const welshPowell: AlgorithmDefinition = {
             const blocked = new Set<NodeId>();
 
             builder.commit({
-                title: `Cor ${current + 1}: nova passagem pela lista`,
-                description: `Percorre-se a lista ordenada colorindo com a cor ${current + 1} todo vértice ainda sem cor que não seja adjacente a nenhum vértice já colorido com ela.`,
+                title: text.passTitle(current + 1),
+                description: text.passDescription(current + 1),
                 ...snapshot(undefined, current),
             });
 
@@ -80,8 +71,8 @@ export const welshPowell: AlgorithmDefinition = {
 
                 if (blocked.has(node.id)) {
                     builder.commit({
-                        title: `${node.label} não pode receber a cor ${current + 1}`,
-                        description: `${node.label} é adjacente a um vértice já colorido com a cor ${current + 1} nesta passagem, portanto fica para uma cor seguinte.`,
+                        title: text.blockedTitle(node.label, current + 1),
+                        description: text.blockedDescription(node.label, current + 1),
                         ...snapshot(node.id, current + 1),
                     });
                     continue;
@@ -90,7 +81,7 @@ export const welshPowell: AlgorithmDefinition = {
                 color.set(node.id, current);
                 painted.push(node.label);
                 builder.setNodeGroup(node.id, current);
-                builder.setNodeBadge(node.id, `cor ${current + 1}`);
+                builder.setNodeBadge(node.id, coloring.badge(current + 1));
                 builder.setNode(node.id, 'done');
                 adjacentTo(node.id).forEach((neighbour) => blocked.add(neighbour));
                 (adjacency.get(node.id) ?? []).forEach((entry) => {
@@ -98,19 +89,19 @@ export const welshPowell: AlgorithmDefinition = {
                 });
 
                 builder.commit({
-                    title: `${node.label} recebe a cor ${current + 1}`,
-                    description: `${node.label} não é adjacente a nenhum vértice já colorido com a cor ${current + 1}. Seus vizinhos ficam bloqueados para esta cor nesta passagem.`,
+                    title: coloring.colorTitle(node.label, current + 1),
+                    description: text.colorDescription(node.label, current + 1),
                     ...snapshot(node.id, current + 1),
                 });
             }
 
             builder.commit({
-                title: `Cor ${current + 1} encerrada`,
-                description: `A cor ${current + 1} foi atribuída a ${painted.length} vértice(s): ${painted.join(', ') || '-'}. ${
+                title: text.passDoneTitle(current + 1),
+                description: text.passDoneDescription(
+                    current + 1,
+                    painted,
                     color.size < sequence.length
-                        ? 'Ainda restam vértices sem cor, então uma nova cor é iniciada.'
-                        : 'Todos os vértices estão coloridos.'
-                }`,
+                ),
                 ...snapshot(undefined, current + 1),
             });
 
@@ -120,15 +111,15 @@ export const welshPowell: AlgorithmDefinition = {
         const maxDegree = Math.max(0, ...sequence.map((node) => degree.get(node.id) ?? 0));
 
         builder.commit({
-            title: 'Coloração concluída',
-            description: `Todos os vértices foram coloridos com ${current} cor(es), sempre respeitando a ordem não crescente de graus.`,
+            title: coloring.completeTitle,
+            description: text.completeDescription(current),
             ...snapshot(undefined, current),
         });
 
         return builder.build([
-            `Welsh-Powell produziu uma ${current}-coloração, logo χ(G) ≤ ${current}.`,
-            `Δ(G) = ${maxDegree}, e vale sempre χ(G) ≤ Δ(G) + 1 = ${maxDegree + 1}.`,
-            'Ordenar por grau costuma dar um resultado melhor que o do método guloso, mas não garante a coloração mínima. Existem contraexemplos, como grafos bipartidos em que o método usa 3 cores embora χ(G) = 2.',
+            text.resultConclusion(current),
+            coloring.boundConclusion(maxDegree),
+            text.comparisonConclusion,
         ]);
     },
 };

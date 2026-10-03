@@ -1,3 +1,4 @@
+import { getDictionary } from '@/i18n/dictionaries';
 import {
     buildAdjacency,
     hasUndirectedEdges,
@@ -7,41 +8,25 @@ import {
 } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, NodeId, TraceTable } from '../graph/types';
-import { requireEdges, requireNodes } from './shared';
+import { requireEdges, requireNodes, traceText } from './shared';
 
 type Mark = 0 | 1 | 2;
 
-const markLabel: Record<Mark, string> = {
-    0: '0 (desmarcado)',
-    1: '1 (temporária)',
-    2: '2 (permanente)',
-};
-
 export const topologicalDfs: AlgorithmDefinition = {
     id: 'topological-dfs',
-    name: 'Ordenação topológica por busca em profundidade',
-    shortName: 'Ord. topológica (BP)',
-    category: 'Ordenação topológica',
-    tagline:
-        'Descrito por Tarjan em 1976: insere cada vértice no início do resultado somente depois de visitar todos os que dependem dele.',
-    complexity: 'O(n + m)',
+    category: 'topological-sort',
     needsStart: false,
     needsEnd: false,
-    constraints: [
-        'Exige grafo direcionado',
-        'Só existe ordenação topológica em grafo acíclico',
-        'Marca temporária reencontrada evidencia ciclo',
-    ],
     validate: (context) => {
         const errors = [...requireNodes(context), ...requireEdges(context)];
         if (hasUndirectedEdges(context.graph)) {
-            errors.push(
-                'Não é possível estabelecer uma ordenação topológica em grafo não direcionado: converta todas as arestas para direcionadas.'
-            );
+            errors.push(traceText(context.locale).topological.undirectedIssue);
         }
         return errors;
     },
-    run: ({ graph, order }) => {
+    run: ({ graph, order, locale }) => {
+        const shared = traceText(locale);
+        const text = getDictionary(locale).algorithms['topological-dfs'].trace;
         const builder = createTraceBuilder(graph);
         const adjacency = buildAdjacency(graph, order);
         const labels = nodeLabelMap(graph);
@@ -56,11 +41,11 @@ export const topologicalDfs: AlgorithmDefinition = {
 
         const markTable = (highlight?: NodeId): TraceTable => ({
             id: 'topo-marks',
-            title: 'Marcas dos vértices',
+            title: text.marksTitle,
             columns: [
-                { key: 'vertex', label: 'Vértice' },
-                { key: 'mark', label: 'Marca[v]' },
-                { key: 'position', label: 'Ordena_Top' },
+                { key: 'vertex', label: shared.columns.vertex },
+                { key: 'mark', label: text.markColumn },
+                { key: 'position', label: shared.topological.result },
             ],
             rows: ordered.map((node) => ({
                 key: node.id,
@@ -68,7 +53,7 @@ export const topologicalDfs: AlgorithmDefinition = {
                     node.id === highlight ? 'active' : mark.get(node.id) === 2 ? 'done' : undefined,
                 cells: {
                     vertex: node.label,
-                    mark: markLabel[mark.get(node.id) ?? 0],
+                    mark: text.markLabels[mark.get(node.id) ?? 0],
                     position: result.includes(node.id) ? String(result.indexOf(node.id) + 1) : '-',
                 },
             })),
@@ -76,14 +61,14 @@ export const topologicalDfs: AlgorithmDefinition = {
 
         const stackList = () => ({
             id: 'topo-stack',
-            title: 'Chamadas de Visita( )',
+            title: text.callsTitle,
             variant: 'stack' as const,
             items: stack.map((id) => labels.get(id) ?? ''),
         });
 
         const resultList = () => ({
             id: 'topo-result',
-            title: 'Ordena_Top',
+            title: shared.topological.result,
             variant: 'set' as const,
             items: result.map((id) => labels.get(id) ?? ''),
         });
@@ -94,9 +79,8 @@ export const topologicalDfs: AlgorithmDefinition = {
         });
 
         builder.commit({
-            title: 'Inicialização',
-            description:
-                'Todos os vértices começam desmarcados, isto é, Marca[v] = 0, e o resultado Ordena_Top começa vazio.',
+            title: shared.initialization,
+            description: text.initDescription,
             ...snapshot(),
         });
 
@@ -107,8 +91,8 @@ export const topologicalDfs: AlgorithmDefinition = {
                 cycleAt = { from: stack[stack.length - 1], to: current };
                 builder.setNode(current, 'reject');
                 builder.commit({
-                    title: `Ciclo: ${labels.get(current)} já tem marca temporária`,
-                    description: `Visita(${labels.get(current)}) foi chamada enquanto Marca[${labels.get(current)}] = 1, ou seja, o vértice ainda está na cadeia de chamadas atual. Isso significa que existe um caminho de ${labels.get(current)} de volta a ele mesmo: o grafo possui ciclo e não admite ordenação topológica.`,
+                    title: text.cycleTitle(labels.get(current) ?? ''),
+                    description: text.cycleDescription(labels.get(current) ?? ''),
                     ...snapshot(current),
                 });
                 return;
@@ -117,11 +101,11 @@ export const topologicalDfs: AlgorithmDefinition = {
             mark.set(current, 1);
             stack.push(current);
             builder.setNode(current, 'active');
-            builder.setNodeBadge(current, 'temp');
+            builder.setNodeBadge(current, text.temporaryBadge);
 
             builder.commit({
-                title: `Visita(${labels.get(current)})`,
-                description: `${labels.get(current)} recebe marca temporária (Marca = 1) e sua vizinhança Γ⁺(${labels.get(current)}) passa a ser visitada.`,
+                title: text.visitTitle(labels.get(current) ?? ''),
+                description: text.visitDescription(labels.get(current) ?? ''),
                 ...snapshot(current),
             });
 
@@ -143,8 +127,8 @@ export const topologicalDfs: AlgorithmDefinition = {
             builder.setNode(current, 'done');
 
             builder.commit({
-                title: `${labels.get(current)} entra no início de Ordena_Top`,
-                description: `Todos os vértices que dependem de ${labels.get(current)} já foram visitados, então ele recebe marca permanente (Marca = 2) e é inserido no início do resultado, daí a ordem reversa de inserção.`,
+                title: text.prependTitle(labels.get(current) ?? ''),
+                description: text.prependDescription(labels.get(current) ?? ''),
                 ...snapshot(current),
             });
 
@@ -162,29 +146,30 @@ export const topologicalDfs: AlgorithmDefinition = {
         if (cycleAt) {
             const { from, to } = cycleAt;
             builder.commit({
-                title: 'Ordenação topológica impossível',
-                description: `A aresta (${labels.get(from)}, ${labels.get(to)}) fecha um ciclo, pois ${labels.get(to)} ainda tinha marca temporária quando foi alcançado novamente.`,
+                title: text.impossibleTitle,
+                description: text.impossibleDescription(
+                    labels.get(from) ?? '',
+                    labels.get(to) ?? ''
+                ),
                 ...snapshot(),
             });
 
             return builder.build([
-                `O grafo possui ciclo: ${labels.get(to)} foi alcançado de novo com marca temporária, a partir de ${labels.get(from)}.`,
-                'Um grafo com ciclo não admite ordenação topológica, pois não é possível estabelecer uma relação de precedência entre os vértices do ciclo.',
+                text.cycleConclusion(labels.get(from) ?? '', labels.get(to) ?? ''),
+                shared.topological.cycleConclusion,
             ]);
         }
 
         builder.commit({
-            title: 'Ordenação topológica concluída',
-            description: `Todos os vértices receberam marca permanente. Lendo Ordena_Top do início ao fim: ${result
-                .map((id) => labels.get(id))
-                .join(' → ')}.`,
+            title: shared.topological.completeTitle,
+            description: text.completeDescription(result.map((id) => labels.get(id)).join(' → ')),
             ...snapshot(),
         });
 
         return builder.build([
-            `Ordenação topológica: ${result.map((id) => labels.get(id)).join(' → ')}.`,
-            'Cada vértice foi inserido no início do resultado, portanto a ordenação corresponde à ordem reversa de inserção, equivalente à ordem decrescente de tempo de término da busca em profundidade.',
-            'Nenhuma marca temporária foi reencontrada, logo o grafo é acíclico. A ordenação topológica pode não ser única.',
+            shared.topological.orderConclusion(result.map((id) => labels.get(id)).join(' → ')),
+            text.reverseConclusion,
+            text.acyclicConclusion,
         ]);
     },
 };

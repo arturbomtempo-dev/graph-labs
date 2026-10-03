@@ -1,52 +1,45 @@
-import { SegmentedControl } from '@/components/SegmentedControl';
-import { algorithms } from '@/lib/algorithms';
-import { documentationById } from '@/lib/algorithms/documentation';
-import type { AlgorithmCategory } from '@/lib/graph/types';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { SegmentedControl } from '@/components/SegmentedControl';
+import { useI18n } from '@/hooks/useI18n';
+import { algorithmCategories, algorithms } from '@/lib/algorithms';
+import type { AlgorithmCategory } from '@/lib/graph/types';
 import { AlgorithmArticle } from './_components/AlgorithmArticle';
 
-const categories: (AlgorithmCategory | 'Todos')[] = [
-    'Todos',
-    'Busca em grafos',
-    'Conectividade',
-    'Grafos eulerianos',
-    'Árvore geradora mínima',
-    'Caminho mínimo',
-    'Fluxo máximo',
-    'Ordenação topológica',
-    'Emparelhamento',
-    'Coloração',
-];
+type CategoryFilter = AlgorithmCategory | 'all';
 
 export function Algorithms() {
-    const [category, setCategory] = useState<AlgorithmCategory | 'Todos'>('Todos');
+    const { t } = useI18n();
+    const [category, setCategory] = useState<CategoryFilter>('all');
     const { hash } = useLocation();
 
     useEffect(() => {
         if (hash) document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView();
     }, [hash]);
 
+    const options = [
+        { value: 'all' as const, label: t.algorithmsPage.all },
+        ...algorithmCategories.map((item) => ({ value: item, label: t.categories[item] })),
+    ];
+
     const visible = algorithms.filter(
-        (algorithm) => category === 'Todos' || algorithm.category === category
+        (algorithm) => category === 'all' || algorithm.category === category
     );
 
     return (
         <div className="mx-auto w-full max-w-275 px-4 py-10 sm:px-6 sm:py-14">
             <header className="flex flex-col gap-3">
                 <h1 className="text-ink text-2xl font-semibold tracking-tight sm:text-3xl">
-                    Referência dos algoritmos
+                    {t.algorithmsPage.title}
                 </h1>
                 <p className="text-ink-soft max-w-2xl text-sm leading-relaxed">
-                    Pseudocódigo, invariantes e erros comuns de cada método implementado no estúdio,
-                    na mesma notação usada em sala. É exatamente essa formulação que a simulação
-                    executa passo a passo.
+                    {t.algorithmsPage.description}
                 </p>
             </header>
 
             <div className="no-scrollbar mt-6 overflow-x-auto">
                 <SegmentedControl
-                    options={categories.map((item) => ({ value: item, label: item }))}
+                    options={options}
                     value={category}
                     onChange={setCategory}
                     className="w-max min-w-full"
@@ -56,11 +49,7 @@ export function Algorithms() {
 
             <div className="mt-6 flex flex-col gap-4">
                 {visible.map((algorithm) => (
-                    <AlgorithmArticle
-                        key={algorithm.id}
-                        algorithm={algorithm}
-                        documentation={documentationById.get(algorithm.id)}
-                    />
+                    <AlgorithmArticle key={algorithm.id} algorithm={algorithm} />
                 ))}
             </div>
         </div>

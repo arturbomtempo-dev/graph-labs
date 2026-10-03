@@ -2,38 +2,30 @@ import { AuthorAvatar } from '@/components/AuthorAvatar';
 import { BrandIcon } from '@/components/BrandIcon';
 import { Button } from '@/components/Button';
 import { Card, CardHeader } from '@/components/Card';
+import { useI18n } from '@/hooks/useI18n';
 import { algorithms } from '@/lib/algorithms';
 import { author } from '@/lib/author';
 import { presets } from '@/lib/graph/presets';
 import { ArrowRight, BookOpen, Code2, GraduationCap, ScrollText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const credentials = [
-    {
-        icon: Code2,
-        title: 'Desenvolvedor de Software',
-        description: 'Mais de 4 anos de experiência na área.',
-    },
-    {
-        icon: ScrollText,
-        title: 'Técnico em Informática',
-        description: 'Formação técnica pelo Coemig.',
-    },
-    {
-        icon: GraduationCap,
-        title: 'Engenharia de Software',
-        description: 'Graduando na PUC Minas.',
-    },
-];
+const credentialIcons = [Code2, ScrollText, GraduationCap];
 
 export function About() {
+    const { t, path } = useI18n();
+    const text = t.about;
     const categories = new Set(algorithms.map((algorithm) => algorithm.category)).size;
 
     const numbers = [
-        { value: String(algorithms.length), label: 'métodos implementados' },
-        { value: String(categories), label: 'frentes da disciplina' },
-        { value: String(presets.length), label: 'grafos de exemplo' },
+        { value: String(algorithms.length), label: text.why.numbers.methods },
+        { value: String(categories), label: text.why.numbers.topics },
+        { value: String(presets.length), label: text.why.numbers.presets },
     ];
+
+    const credentials = text.credentials.map((credential, index) => ({
+        ...credential,
+        icon: credentialIcons[index],
+    }));
 
     return (
         <div className="flex flex-col">
@@ -51,7 +43,7 @@ export function About() {
 
                         <div className="min-w-0">
                             <p className="text-ink-faint text-[11px] font-semibold tracking-wider uppercase">
-                                Sobre o autor
+                                {text.eyebrow}
                             </p>
 
                             <h1 className="text-ink mt-3 text-3xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-4xl">
@@ -59,8 +51,7 @@ export function About() {
                             </h1>
 
                             <p className="text-ink-soft mt-2 text-sm leading-relaxed sm:text-base">
-                                {author.headline} · {author.role} na {author.institution} no{' '}
-                                {author.term}.
+                                {text.summary(author.institution)}
                             </p>
 
                             <ul className="mt-6 flex flex-wrap gap-2">
@@ -86,16 +77,10 @@ export function About() {
             <section className="mx-auto w-full max-w-275 px-4 py-14 sm:px-6">
                 <div className="grid gap-4 lg:grid-cols-2">
                     <Card>
-                        <CardHeader
-                            title="Quem escreve"
-                            description="Um resumo rápido da minha formação e do que faço."
-                        />
+                        <CardHeader title={text.who.title} description={text.who.description} />
                         <div className="flex flex-col gap-4 p-5">
                             <p className="text-ink-soft text-[13px] leading-relaxed">
-                                Trabalho com desenvolvimento há mais de 4 anos, construindo
-                                aplicações web e ferramentas que tornam ideias abstratas mais fáceis
-                                de enxergar. Gosto especialmente de projetos em que a interface é o
-                                que faz o conceito finalmente fazer sentido.
+                                {text.who.text}
                             </p>
 
                             <ul className="flex flex-col gap-3">
@@ -119,31 +104,16 @@ export function About() {
                     </Card>
 
                     <Card>
-                        <CardHeader
-                            title="Por que o Graph Labs existe"
-                            description="Para estudar os algoritmos e conferir exercícios."
-                        />
+                        <CardHeader title={text.why.title} description={text.why.description} />
                         <div className="flex flex-col gap-4 p-5">
-                            <p className="text-ink-soft text-[13px] leading-relaxed">
-                                Na monitoria de Teoria dos Grafos da {author.institution}, no{' '}
-                                {author.term}, desenvolvi o Graph Labs para ajudar os alunos a
-                                compreender e revisar os principais algoritmos de grafos vistos na
-                                disciplina.
-                            </p>
-
-                            <p className="text-ink-soft text-[13px] leading-relaxed">
-                                A ideia nasceu de uma dificuldade recorrente no atendimento: o
-                                pseudocódigo no papel esconde o que de fato acontece a cada
-                                iteração. Aqui cada método executa passo a passo sobre o grafo que o
-                                próprio aluno desenhou, exibindo as mesmas tabelas, filas e notação
-                                usadas em sala, com a justificativa de cada decisão.
-                            </p>
-
-                            <p className="text-ink-soft text-[13px] leading-relaxed">
-                                Na prática, dá para remontar o grafo de um exercício da lista,
-                                executar o método sobre ele e comparar cada passo com o que você
-                                resolveu no papel.
-                            </p>
+                            {text.why.paragraphs(author.institution).map((paragraph) => (
+                                <p
+                                    key={paragraph}
+                                    className="text-ink-soft text-[13px] leading-relaxed"
+                                >
+                                    {paragraph}
+                                </p>
+                            ))}
 
                             <dl className="border-line grid grid-cols-3 gap-3 border-t pt-4">
                                 {numbers.map((item) => (
@@ -164,27 +134,26 @@ export function About() {
                 <div className="border-line bg-surface-sunken/50 mt-4 flex flex-col gap-4 rounded-card border p-5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                         <h2 className="text-ink text-sm font-semibold tracking-tight">
-                            Feito para estudar e conferir exercícios
+                            {text.cta.title}
                         </h2>
                         <p className="text-ink-soft mt-1 text-xs leading-relaxed">
-                            Monte o grafo do seu exercício ou carregue um dos exemplos e confira
-                            cada passo da execução.
+                            {text.cta.description}
                         </p>
                     </div>
                     <div className="flex shrink-0 flex-col gap-2.5 sm:flex-row">
-                        <Link to="/estudio" className="block w-full shrink-0 sm:w-auto">
+                        <Link to={path('studio')} className="block w-full shrink-0 sm:w-auto">
                             <Button
                                 variant="primary"
                                 fullWidth
                                 trailingIcon={<ArrowRight size={15} />}
                                 className="sm:w-auto"
                             >
-                                Abrir o estúdio
+                                {text.cta.openStudio}
                             </Button>
                         </Link>
-                        <Link to="/algoritmos" className="block w-full shrink-0 sm:w-auto">
+                        <Link to={path('algorithms')} className="block w-full shrink-0 sm:w-auto">
                             <Button fullWidth icon={<BookOpen size={15} />} className="sm:w-auto">
-                                Ver pseudocódigos
+                                {text.cta.viewPseudocode}
                             </Button>
                         </Link>
                     </div>

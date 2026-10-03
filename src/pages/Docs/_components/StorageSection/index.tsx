@@ -1,69 +1,50 @@
-import { History, Moon, Network, Wand2 } from 'lucide-react';
+import { History, Languages, Moon, Network, Wand2, type LucideIcon } from 'lucide-react';
+import { useI18n } from '@/hooks/useI18n';
 import { Callout } from '../Callout';
 import { DocSection } from '../DocSection';
 
-const items = [
-    {
-        icon: Network,
-        title: 'Grafo atual',
-        storage: 'Salvo no navegador',
-        description:
-            'Vértices, posições, arestas, pesos e direções são salvos a cada alteração. Ao voltar ao estúdio, o grafo reaparece exatamente como você deixou.',
-    },
-    {
-        icon: Wand2,
-        title: 'Sugestão de posicionamento',
-        storage: 'Salvo no navegador',
-        description: 'Fica lembrado se você prefere o ajuste automático ligado ou desligado.',
-    },
-    {
-        icon: Moon,
-        title: 'Tema claro ou escuro',
-        storage: 'Salvo no navegador',
-        description:
-            'Na primeira visita segue a preferência do sistema operacional. Depois, vale a escolha feita no botão do cabeçalho.',
-    },
-    {
-        icon: History,
-        title: 'Histórico e execução',
-        storage: 'Apenas nesta sessão',
-        description:
-            'O histórico de desfazer e refazer, o algoritmo escolhido e o traço da execução são descartados ao recarregar a página.',
-    },
+const items: {
+    key: 'graph' | 'autoArrange' | 'theme' | 'language' | 'history';
+    icon: LucideIcon;
+    persisted: boolean;
+}[] = [
+    { key: 'graph', icon: Network, persisted: true },
+    { key: 'autoArrange', icon: Wand2, persisted: true },
+    { key: 'theme', icon: Moon, persisted: true },
+    { key: 'language', icon: Languages, persisted: true },
+    { key: 'history', icon: History, persisted: false },
 ];
 
 export function StorageSection() {
+    const { t } = useI18n();
+    const text = t.docs.storage;
+
     return (
-        <DocSection
-            id="dados-e-preferencias"
-            index={10}
-            title="Dados e preferências"
-            description="O Graph Labs não tem servidor, banco de dados nem cadastro. Todo o processamento acontece no seu navegador e nada do que você desenha é enviado para lugar algum."
-        >
+        <DocSection section="storage" description={text.description}>
             <ul className="grid gap-2.5 sm:grid-cols-2">
                 {items.map((item) => (
                     <li
-                        key={item.title}
+                        key={item.key}
                         className="border-line bg-surface flex flex-col gap-2 rounded-lg border p-4"
                     >
                         <div className="flex items-center justify-between gap-2">
                             <span className="text-ink flex items-center gap-2 text-[13px] font-semibold">
                                 <item.icon size={15} className="text-brand" />
-                                {item.title}
+                                {text.items[item.key].title}
                             </span>
                             <span className="text-ink-faint text-[10px] font-semibold tracking-wider whitespace-nowrap uppercase">
-                                {item.storage}
+                                {item.persisted ? text.savedInBrowser : text.sessionOnly}
                             </span>
                         </div>
-                        <p className="text-ink-soft text-xs leading-relaxed">{item.description}</p>
+                        <p className="text-ink-soft text-xs leading-relaxed">
+                            {text.items[item.key].description}
+                        </p>
                     </li>
                 ))}
             </ul>
 
-            <Callout tone="warning" title="Um grafo por navegador">
-                O estúdio guarda apenas o grafo em edição, e só no navegador e dispositivo em que
-                ele foi criado. Limpar os dados do site, usar uma janela anônima ou carregar um
-                modelo pronto substitui o grafo salvo.
+            <Callout tone="warning" title={text.warningTitle}>
+                {text.warningText}
             </Callout>
         </DocSection>
     );

@@ -1,11 +1,12 @@
 import { SegmentedControl } from '@/components/SegmentedControl';
+import { useI18n } from '@/hooks/useI18n';
 import { useAlgorithmRunner } from '@/hooks/useAlgorithmRunner';
 import { useGraphEditor } from '@/hooks/useGraphEditor';
 import { algorithms, findAlgorithm } from '@/lib/algorithms';
 import { sortedNodes } from '@/lib/graph/helpers';
-import type { NodeId } from '@/lib/graph/types';
+import type { AlgorithmId, NodeId } from '@/lib/graph/types';
 import { Hammer, ListChecks, Play } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AlgorithmPanel } from './_components/AlgorithmPanel';
 import { BuilderPanel } from './_components/BuilderPanel';
 import { CanvasLegend } from './_components/CanvasLegend';
@@ -15,20 +16,14 @@ import { StepPanel } from './_components/StepPanel';
 
 type StudioTab = 'build' | 'run' | 'steps';
 
-const tabs = [
-    { value: 'build' as const, label: 'Construir', icon: <Hammer size={13} /> },
-    { value: 'run' as const, label: 'Executar', icon: <Play size={13} /> },
-    { value: 'steps' as const, label: 'Passos', icon: <ListChecks size={13} /> },
-];
-
-const toolHints: Record<CanvasTool, string> = {
-    select: 'Arraste os vértices para reposicionar e o fundo para mover a visão.',
-    node: 'Clique em qualquer ponto vazio do canvas para criar um vértice.',
-    edge: 'Clique no primeiro vértice e depois no segundo para criar a aresta.',
-    erase: 'Clique em um vértice ou aresta para removê-lo do grafo.',
+const tabIcons: Record<StudioTab, ReactNode> = {
+    build: <Hammer size={13} />,
+    run: <Play size={13} />,
+    steps: <ListChecks size={13} />,
 };
 
 export function Studio() {
+    const { t, locale } = useI18n();
     const editor = useGraphEditor();
     const runner = useAlgorithmRunner();
 
@@ -38,7 +33,7 @@ export function Studio() {
     const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
     const [pendingSourceId, setPendingSourceId] = useState<NodeId | null>(null);
     const [defaultDirected, setDefaultDirected] = useState(false);
-    const [algorithmId, setAlgorithmId] = useState(algorithms[0].id);
+    const [algorithmId, setAlgorithmId] = useState<AlgorithmId>(algorithms[0].id);
     const [startId, setStartId] = useState<NodeId | null>(null);
     const [endId, setEndId] = useState<NodeId | null>(null);
     const [autoFitKey, setAutoFitKey] = useState(0);
@@ -78,12 +73,10 @@ export function Studio() {
         return orderedNodeIds.find((id) => id !== resolvedStartId) ?? null;
     }, [endId, nodeIds, algorithm.needsEnd, orderedNodeIds, resolvedStartId]);
 
-    const isFlow = algorithm.category === 'Fluxo máximo';
+    const isFlow = algorithm.category === 'max-flow';
     const usesStart =
-        algorithm.needsStart ||
-        algorithm.category === 'Caminho mínimo' ||
-        algorithm.id === 'fleury';
-    const usesEnd = algorithm.needsEnd || algorithm.category === 'Caminho mínimo';
+        algorithm.needsStart || algorithm.category === 'shortest-path' || algorithm.id === 'fleury';
+    const usesEnd = algorithm.needsEnd || algorithm.category === 'shortest-path';
     const activeStartId = usesStart ? resolvedStartId : null;
     const activeEndId = usesEnd ? resolvedEndId : null;
 
@@ -100,8 +93,14 @@ export function Studio() {
     );
 
     const context = useMemo(
-        () => ({ graph, startId: activeStartId, endId: activeEndId, order: resolvedOrder }),
-        [graph, activeStartId, activeEndId, resolvedOrder]
+        () => ({
+            graph,
+            startId: activeStartId,
+            endId: activeEndId,
+            order: resolvedOrder,
+            locale,
+        }),
+        [graph, activeStartId, activeEndId, resolvedOrder, locale]
     );
     const issues = useMemo(() => algorithm.validate(context), [algorithm, context]);
 
@@ -215,8 +214,8 @@ export function Studio() {
                     pendingSourceId={pendingSourceId}
                     startId={activeStartId}
                     endId={activeEndId}
-                    startLabel={isFlow ? 'fonte' : 'raiz'}
-                    endLabel={isFlow ? 'sumidouro' : 'destino'}
+                    startLabel={isFlow ? t.studio.canvas.source : t.studio.canvas.root}
+                    endLabel={isFlow ? t.studio.canvas.sink : t.studio.canvas.target}
                     autoFitKey={autoFitKey}
                     onBackgroundClick={handleBackgroundClick}
                     onNodePointerDown={handleNodePointerDown}
@@ -241,7 +240,7 @@ export function Studio() {
                     autoArrange={editor.autoArrange}
                     onAutoArrangeChange={editor.setAutoArrange}
                     onArrangeNow={editor.arrangeNow}
-                    hint={toolHints[tool]}
+                    hint={t.studio.toolHints[tool]}
                 />
 
                 <CanvasLegend className="absolute bottom-3 left-3 max-w-[calc(100%-4.5rem)]" />
@@ -249,7 +248,16 @@ export function Studio() {
 
             <aside className="bg-surface-sunken/40 flex w-full flex-col lg:min-h-0 lg:w-[400px] lg:shrink-0 lg:overflow-hidden">
                 <div className="border-line bg-surface/85 sticky top-14 z-20 border-b p-3 backdrop-blur-md lg:static">
-                    <SegmentedControl options={tabs} value={tab} onChange={setTab} size="sm" />
+                    <SegmentedControl
+                        options={(['build', 'run', 'steps'] as const).map((value) => ({
+                            value,
+                            label: t.studio.tabs[value],
+                            icon: tabIcons[value],
+                        }))}
+                        value={tab}
+                        onChange={setTab}
+                        size="sm"
+                    />
                 </div>
 
                 <div className="flex-1 overscroll-contain p-3 lg:min-h-0 lg:overflow-y-auto">

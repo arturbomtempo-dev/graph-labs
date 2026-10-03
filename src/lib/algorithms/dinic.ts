@@ -1,3 +1,4 @@
+import { getDictionary } from '@/i18n/dictionaries';
 import { formatWeight, nodeLabelMap, weightOf } from '../graph/helpers';
 import { createTraceBuilder } from '../graph/trace';
 import type { AlgorithmDefinition, NodeId, TraceTable } from '../graph/types';
@@ -10,7 +11,7 @@ import {
     residualTable,
     type ResidualNetwork,
 } from './flowShared';
-import { labelOf } from './shared';
+import { labelOf, traceText } from './shared';
 
 function levels(network: ResidualNetwork, source: NodeId): Map<NodeId, number> {
     const dist = new Map<NodeId, number>([[source, 0]]);
@@ -28,24 +29,18 @@ function levels(network: ResidualNetwork, source: NodeId): Map<NodeId, number> {
 
 export const dinic: AlgorithmDefinition = {
     id: 'dinic',
-    name: 'Método de Dinic',
-    shortName: 'Dinic',
-    category: 'Fluxo máximo',
-    tagline:
-        'A cada iteração constrói a rede em níveis GL a partir de G′(f) e determina nela um fluxo de bloqueio.',
-    complexity: 'O(n² · m)',
+    category: 'max-flow',
     needsStart: true,
     needsEnd: true,
-    constraints: [
-        'Exige rede de fluxo: grafo direcionado com capacidade u(e) > 0',
-        'Requer uma fonte s e um sumidouro t',
-        'No máximo n − 1 fluxos de bloqueio',
-    ],
-    validate: (context) => flowNetworkErrors(context, 'o método de Dinic'),
-    run: ({ graph, startId, endId, order }) => {
+    validate: flowNetworkErrors,
+    run: ({ graph, startId, endId, order, locale }) => {
+        const shared = traceText(locale);
+        const flow = shared.flow;
+        const text = getDictionary(locale).algorithms.dinic.trace;
         const builder = createTraceBuilder(graph);
         const labels = nodeLabelMap(graph);
         const network = createResidualNetwork(graph, order);
+        const residual = () => residualTable(graph, network, locale);
         const source = startId as NodeId;
         const sink = endId as NodeId;
 
@@ -64,9 +59,9 @@ export const dinic: AlgorithmDefinition = {
 
         const levelTable = (dist: Map<NodeId, number>): TraceTable => ({
             id: 'dinic-levels',
-            title: 'Rede em níveis GL',
+            title: text.levelsTitle,
             columns: [
-                { key: 'vertex', label: 'Vértice' },
+                { key: 'vertex', label: shared.columns.vertex },
                 { key: 'dist', label: 'dist(v)' },
             ],
             rows: network.order.map((id) => ({
@@ -84,10 +79,10 @@ export const dinic: AlgorithmDefinition = {
         builder.setNodeBadge(sink, 't');
 
         builder.commit({
-            title: 'Rede residual inicial G′(f)',
-            description: `f(e) = 0 para toda aresta, portanto u_r(e) = u(e). A fonte é s = ${labelOf(graph, source)} e o sumidouro é t = ${labelOf(graph, sink)}.`,
-            tables: [residualTable(graph, network)],
-            metrics: [{ label: 'Valor do fluxo', value: '0' }],
+            title: text.initTitle,
+            description: text.initDescription(labelOf(graph, source), labelOf(graph, sink)),
+            tables: [residual()],
+            metrics: [{ label: flow.flowValue, value: '0' }],
         });
 
         const phaseLimit = graph.nodes.length + 2;
@@ -133,42 +128,45 @@ export const dinic: AlgorithmDefinition = {
                 });
 
                 builder.commit({
-                    title: 'dist(t) = ∞, o laço termina',
-                    description: `O sumidouro não é mais alcançável em G′(f), portanto não existe caminho aumentante nem fluxo de bloqueio. O conjunto S = { ${[
-                        ...inCut,
-                    ]
-                        .map((id) => labels.get(id))
-                        .join(', ')} } define o corte s-t mínimo.`,
-                    tables: [residualTable(graph, network)],
+                    title: text.endTitle,
+                    description: text.endDescription(
+                        [...inCut].map((id) => labels.get(id) ?? '').join(', ')
+                    ),
+                    tables: [residual()],
                     metrics: [
-                        { label: 'Valor do fluxo', value: formatWeight(maxFlow) },
-                        { label: 'Capacidade do corte(S)', value: formatWeight(cutCapacity) },
-                        { label: 'Fluxos de bloqueio', value: String(phase) },
+                        { label: flow.flowValue, value: formatWeight(maxFlow) },
+                        { label: flow.cutCapacity, value: formatWeight(cutCapacity) },
+                        { label: text.blockingFlowsMetric, value: String(phase) },
                     ],
                 });
 
                 return builder.build([
-                    `Fluxo máximo entre s = ${labelOf(graph, source)} e t = ${labelOf(graph, sink)}: ${formatWeight(maxFlow)}.`,
-                    `Foram necessários ${phase} fluxo(s) de bloqueio: ${blockingFlows.join(' | ') || '-'}.`,
-                    `Corte s-t mínimo: corte(S) = { ${
+                    flow.maxFlowConclusion(
+                        labelOf(graph, source),
+                        labelOf(graph, sink),
+                        formatWeight(maxFlow)
+                    ),
+                    text.blockingFlowsConclusion(phase, blockingFlows.join(' | ') || '-'),
+                    flow.cutConclusion(
                         cutEdges
                             .map(
                                 (edge) => `(${labels.get(edge.source)}, ${labels.get(edge.target)})`
                             )
-                            .join(', ') || '-'
-                    } }, de capacidade ${formatWeight(cutCapacity)}, igual ao valor do fluxo máximo.`,
-                    'O número de níveis aumenta pelo menos uma unidade a cada fluxo de bloqueio, portanto existem no máximo n − 1 iterações.',
+                            .join(', ') || '-',
+                        formatWeight(cutCapacity)
+                    ),
+                    text.levelsConclusion,
                 ]);
             }
 
             phase += 1;
 
             builder.commit({
-                title: `Rede em níveis ${phase}: dist(t) = ${dist.get(sink)}`,
-                description: `Uma busca em largura em G′(f) define dist(v) para cada vértice. GL contém apenas as arestas (v, w) de G′(f) com dist(w) = dist(v) + 1, destacadas em laranja. Todo caminho de s a t em GL tem exatamente ${dist.get(sink)} aresta(s).`,
-                tables: [levelTable(dist), residualTable(graph, network)],
+                title: text.levelGraphTitle(phase, dist.get(sink) ?? 0),
+                description: text.levelGraphDescription(dist.get(sink) ?? 0),
+                tables: [levelTable(dist), residual()],
                 metrics: [
-                    { label: 'Valor do fluxo', value: formatWeight(maxFlow) },
+                    { label: flow.flowValue, value: formatWeight(maxFlow) },
                     { label: 'dist(t)', value: String(dist.get(sink)) },
                 ],
             });
@@ -237,12 +235,12 @@ export const dinic: AlgorithmDefinition = {
                 refreshBadges();
 
                 builder.commit({
-                    title: `Fluxo de bloqueio ${phase}, caminho ${pathsInPhase}: ${pathLabel}`,
-                    description: `Em GL há o caminho ${pathLabel}, com gargalo δ = ${formatWeight(bottleneck)}. Após o envio, pelo menos uma de suas arestas satura e deixa de pertencer a GL, o que faz o fluxo de bloqueio avançar.`,
-                    tables: [levelTable(dist), residualTable(graph, network)],
+                    title: text.pathTitle(phase, pathsInPhase, pathLabel),
+                    description: text.pathDescription(pathLabel, formatWeight(bottleneck)),
+                    tables: [levelTable(dist), residual()],
                     metrics: [
-                        { label: 'Valor do fluxo', value: formatWeight(maxFlow) },
-                        { label: 'Fluxo de bloqueio', value: formatWeight(blocking) },
+                        { label: flow.flowValue, value: formatWeight(maxFlow) },
+                        { label: text.blockingFlowMetric, value: formatWeight(blocking) },
                     ],
                 });
             }
@@ -251,16 +249,13 @@ export const dinic: AlgorithmDefinition = {
 
             builder.resetEdgesWithState('path', 'idle');
             builder.commit({
-                title: `Fluxo de bloqueio ${phase} determinado: fb = ${formatWeight(blocking)}`,
-                description: `Não há mais caminho de s a t em GL: o fluxo de bloqueio está completo, com ${pathsInPhase} caminho(s) e valor ${formatWeight(blocking)}. O fluxo f é atualizado, e uma nova rede residual e uma nova rede em níveis são construídas.`,
-                tables: [residualTable(graph, network)],
-                metrics: [{ label: 'Valor do fluxo', value: formatWeight(maxFlow) }],
+                title: text.phaseDoneTitle(phase, formatWeight(blocking)),
+                description: text.phaseDoneDescription(pathsInPhase, formatWeight(blocking)),
+                tables: [residual()],
+                metrics: [{ label: flow.flowValue, value: formatWeight(maxFlow) }],
             });
         }
 
-        return builder.build([
-            `Valor do fluxo alcançado: ${formatWeight(maxFlow)} após ${phase} fluxo(s) de bloqueio.`,
-            'O limite de iterações foi atingido: revise as capacidades da rede.',
-        ]);
+        return builder.build([text.limitConclusion(formatWeight(maxFlow), phase), flow.limitHint]);
     },
 };

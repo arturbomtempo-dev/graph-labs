@@ -1,18 +1,19 @@
-import { AlertTriangle, Check, Play } from 'lucide-react';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card, CardHeader } from '@/components/Card';
 import { Select } from '@/components/Select';
-import { algorithms } from '@/lib/algorithms';
+import { useI18n } from '@/hooks/useI18n';
+import { algorithmCategories, algorithms } from '@/lib/algorithms';
 import { sortedNodes } from '@/lib/graph/helpers';
-import type { AlgorithmCategory, AlgorithmDefinition, Graph, NodeId } from '@/lib/graph/types';
+import type { AlgorithmDefinition, AlgorithmId, Graph, NodeId } from '@/lib/graph/types';
 import { cn } from '@/lib/utils/cn';
+import { AlertTriangle, Check, Play } from 'lucide-react';
 import { VisitOrderPicker } from '../VisitOrderPicker';
 
 interface AlgorithmPanelProps {
     graph: Graph;
     selectedAlgorithm: AlgorithmDefinition;
-    onSelectAlgorithm: (id: string) => void;
+    onSelectAlgorithm: (id: AlgorithmId) => void;
     startId: NodeId | null;
     endId: NodeId | null;
     onStartChange: (id: NodeId | null) => void;
@@ -22,18 +23,6 @@ interface AlgorithmPanelProps {
     onOrderChange: (order: NodeId[]) => void;
     onRun: () => void;
 }
-
-const categoryOrder: AlgorithmCategory[] = [
-    'Busca em grafos',
-    'Conectividade',
-    'Grafos eulerianos',
-    'Árvore geradora mínima',
-    'Caminho mínimo',
-    'Fluxo máximo',
-    'Ordenação topológica',
-    'Emparelhamento',
-    'Coloração',
-];
 
 export function AlgorithmPanel({
     graph,
@@ -48,9 +37,12 @@ export function AlgorithmPanel({
     onOrderChange,
     onRun,
 }: AlgorithmPanelProps) {
+    const { t } = useI18n();
+    const text = t.studio.run;
+    const selectedText = t.algorithms[selectedAlgorithm.id];
     const nodeOptions = sortedNodes(graph).map((node) => ({ value: node.id, label: node.label }));
-    const isFlow = selectedAlgorithm.category === 'Fluxo máximo';
-    const isShortestPath = selectedAlgorithm.category === 'Caminho mínimo';
+    const isFlow = selectedAlgorithm.category === 'max-flow';
+    const isShortestPath = selectedAlgorithm.category === 'shortest-path';
     const showStart =
         selectedAlgorithm.needsStart || isShortestPath || selectedAlgorithm.id === 'fleury';
     const showEnd = selectedAlgorithm.needsEnd || isShortestPath;
@@ -58,12 +50,9 @@ export function AlgorithmPanel({
     return (
         <div className="flex flex-col gap-3">
             <Card>
-                <CardHeader
-                    title="Algoritmo"
-                    description="Escolha o procedimento que será executado passo a passo."
-                />
+                <CardHeader title={text.algorithmTitle} description={text.algorithmDescription} />
                 <div className="flex flex-col gap-4 p-3">
-                    {categoryOrder.map((category) => {
+                    {algorithmCategories.map((category) => {
                         const group = algorithms.filter(
                             (algorithm) => algorithm.category === category
                         );
@@ -72,7 +61,7 @@ export function AlgorithmPanel({
                         return (
                             <div key={category} className="flex flex-col gap-1.5">
                                 <p className="text-ink-faint px-1 text-[10px] font-semibold tracking-wider uppercase">
-                                    {category}
+                                    {t.categories[category]}
                                 </p>
                                 {group.map((algorithm) => {
                                     const isSelected = algorithm.id === selectedAlgorithm.id;
@@ -94,14 +83,14 @@ export function AlgorithmPanel({
                                                         isSelected ? 'text-brand' : 'text-ink'
                                                     )}
                                                 >
-                                                    {algorithm.name}
+                                                    {t.algorithms[algorithm.id].name}
                                                 </p>
                                                 <span className="text-ink-faint shrink-0 font-mono text-[10px]">
-                                                    {algorithm.complexity}
+                                                    {t.algorithms[algorithm.id].complexity}
                                                 </span>
                                             </div>
                                             <p className="text-ink-soft mt-0.5 text-[11px] leading-relaxed">
-                                                {algorithm.tagline}
+                                                {t.algorithms[algorithm.id].tagline}
                                             </p>
                                         </button>
                                     );
@@ -114,27 +103,27 @@ export function AlgorithmPanel({
 
             <Card>
                 <CardHeader
-                    title="Parâmetros"
-                    description={`${selectedAlgorithm.name} · ${selectedAlgorithm.complexity}`}
+                    title={text.parametersTitle}
+                    description={`${selectedText.name} · ${selectedText.complexity}`}
                 />
                 <div className="flex flex-col gap-3 p-3">
                     <div className="flex flex-wrap gap-1.5">
-                        {selectedAlgorithm.constraints.map((constraint) => (
+                        {selectedText.constraints.map((constraint) => (
                             <Badge key={constraint}>{constraint}</Badge>
                         ))}
                     </div>
 
                     {showStart ? (
                         <Select
-                            label={isFlow ? 'Fonte s' : 'Raiz / origem'}
+                            label={isFlow ? text.source : text.root}
                             hint={
                                 selectedAlgorithm.needsStart
                                     ? undefined
                                     : selectedAlgorithm.id === 'fleury'
-                                      ? 'Opcional: com vértices de grau ímpar, o trajeto precisa partir de um deles.'
-                                      : 'Opcional: define de onde parte o caminho destacado.'
+                                      ? text.fleuryHint
+                                      : text.optionalStartHint
                             }
-                            placeholder={selectedAlgorithm.needsStart ? 'Selecione' : 'Nenhum'}
+                            placeholder={selectedAlgorithm.needsStart ? text.select : text.none}
                             options={nodeOptions}
                             value={startId ?? ''}
                             onChange={(event) => onStartChange(event.target.value || null)}
@@ -143,13 +132,9 @@ export function AlgorithmPanel({
 
                     {showEnd ? (
                         <Select
-                            label={isFlow ? 'Sumidouro t' : 'Vértice de destino'}
-                            hint={
-                                selectedAlgorithm.needsEnd
-                                    ? undefined
-                                    : 'Opcional: destaca o caminho mínimo até este vértice.'
-                            }
-                            placeholder={selectedAlgorithm.needsEnd ? 'Selecione' : 'Nenhum'}
+                            label={isFlow ? text.sink : text.target}
+                            hint={selectedAlgorithm.needsEnd ? undefined : text.optionalTargetHint}
+                            placeholder={selectedAlgorithm.needsEnd ? text.select : text.none}
                             options={nodeOptions}
                             value={endId ?? ''}
                             onChange={(event) => onEndChange(event.target.value || null)}
@@ -163,10 +148,10 @@ export function AlgorithmPanel({
                             onChange={onOrderChange}
                             rootLabel={
                                 isFlow
-                                    ? 'o primeiro vizinho tentado na busca'
+                                    ? text.rootRoles.flow
                                     : showStart
-                                      ? 'a raiz quando nenhuma for escolhida acima'
-                                      : 'a raiz da execução'
+                                      ? text.rootRoles.fallback
+                                      : text.rootRoles.root
                             }
                         />
                     </div>
@@ -185,7 +170,8 @@ export function AlgorithmPanel({
                         </div>
                     ) : (
                         <p className="text-state-done flex items-center gap-1.5 text-[11px]">
-                            <Check size={13} />O grafo atende aos requisitos deste algoritmo.
+                            <Check size={13} />
+                            {text.requirementsMet}
                         </p>
                     )}
 
@@ -196,7 +182,7 @@ export function AlgorithmPanel({
                         disabled={issues.length > 0}
                         onClick={onRun}
                     >
-                        Executar {selectedAlgorithm.shortName}
+                        {text.execute(selectedText.shortName)}
                     </Button>
                 </div>
             </Card>

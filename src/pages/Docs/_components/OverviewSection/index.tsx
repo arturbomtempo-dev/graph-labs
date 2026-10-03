@@ -1,70 +1,36 @@
 import { BookOpen, GraduationCap, Hammer, Info, MonitorSmartphone, Route } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useI18n } from '@/hooks/useI18n';
+import type { RouteKey } from '@/i18n/config';
 import { algorithms } from '@/lib/algorithms';
 import { presets } from '@/lib/graph/presets';
 import { DocSection, DocSubsection } from '../DocSection';
 
-const pages = [
-    {
-        icon: Hammer,
-        to: '/estudio',
-        title: 'Estúdio',
-        description:
-            'O coração do projeto: editor de grafos, seleção do algoritmo e reprodução da execução passo a passo.',
-    },
-    {
-        icon: BookOpen,
-        to: '/algoritmos',
-        title: 'Algoritmos',
-        description:
-            'Referência teórica de cada método: ideia central, invariante, requisitos, erros comuns e pseudocódigo.',
-    },
-    {
-        icon: Info,
-        to: '/sobre',
-        title: 'Sobre',
-        description: 'Origem do projeto na monitoria de Teoria dos Grafos e informações do autor.',
-    },
+const pageEntries: {
+    route: Extract<RouteKey, 'studio' | 'algorithms' | 'about'>;
+    icon: typeof Info;
+}[] = [
+    { route: 'studio', icon: Hammer },
+    { route: 'algorithms', icon: BookOpen },
+    { route: 'about', icon: Info },
 ];
 
-const principles = [
-    {
-        icon: GraduationCap,
-        title: 'Fiel à disciplina',
-        description:
-            'Nomes, notação, tabelas e ordem de visita seguem o que é ensinado e cobrado em sala, e não a versão genérica de uma biblioteca.',
-    },
-    {
-        icon: Route,
-        title: 'Cada decisão justificada',
-        description:
-            'Todo passo traz um título, a explicação do que aconteceu e o estado das estruturas auxiliares naquele instante.',
-    },
-    {
-        icon: MonitorSmartphone,
-        title: '100% no navegador',
-        description:
-            'Sem cadastro, sem servidor e sem banco de dados. Funciona no computador, no tablet e no celular.',
-    },
-];
+const principleIcons = [GraduationCap, Route, MonitorSmartphone];
 
 export function OverviewSection() {
+    const { t, path } = useI18n();
+    const text = t.docs.overview;
     const categories = new Set(algorithms.map((algorithm) => algorithm.category)).size;
 
     const numbers = [
-        { value: algorithms.length, label: 'algoritmos implementados' },
-        { value: categories, label: 'tópicos da disciplina' },
-        { value: presets.length, label: 'grafos de exemplo' },
+        { value: algorithms.length, label: text.numbers.algorithms },
+        { value: categories, label: text.numbers.topics },
+        { value: presets.length, label: text.numbers.presets },
     ];
 
     return (
-        <DocSection
-            id="visao-geral"
-            index={1}
-            title="Visão geral"
-            description="O Graph Labs é um laboratório visual de teoria dos grafos. Você desenha o grafo, escolhe um dos métodos clássicos e acompanha a execução iteração por iteração, com as mesmas tabelas, filas e notação usadas em sala."
-        >
-            <dl className="border-line bg-surface shadow-soft rounded-card grid grid-cols-3 divide-x divide-[var(--color-line)] border">
+        <DocSection section="overview" description={text.description}>
+            <dl className="border-line bg-surface shadow-soft rounded-card grid grid-cols-3 divide-x divide-line border">
                 {numbers.map((item) => (
                     <div key={item.label} className="px-4 py-4 sm:px-5">
                         <dt className="text-brand font-mono text-2xl font-semibold">
@@ -77,42 +43,38 @@ export function OverviewSection() {
                 ))}
             </dl>
 
-            <DocSubsection title="O problema que ele resolve">
-                <p>
-                    O pseudocódigo no papel esconde justamente a parte que mais importa para
-                    aprender: o que acontece em cada iteração. Ler que o método de Dijkstra
-                    “seleciona o vértice não fechado de menor rótulo” é bem diferente de ver esse
-                    vértice ser escolhido, a tabela de distâncias ser atualizada e a aresta entrar
-                    na solução.
-                </p>
-                <p>
-                    No Graph Labs, você remonta o grafo de um exercício da lista, executa o método
-                    sobre ele e compara cada passo com o que resolveu à mão. É útil em aulas e
-                    monitorias, na correção de exercícios e no estudo individual antes da prova.
-                </p>
+            <DocSubsection title={text.problemTitle}>
+                {text.problemParagraphs.map((paragraph) => (
+                    <p key={paragraph}>{paragraph}</p>
+                ))}
             </DocSubsection>
 
             <div className="grid gap-3 sm:grid-cols-3">
-                {principles.map((item) => (
-                    <div
-                        key={item.title}
-                        className="border-line bg-surface rounded-card flex flex-col gap-2.5 border p-4"
-                    >
-                        <span className="bg-brand/10 text-brand flex size-8 items-center justify-center rounded-lg">
-                            <item.icon size={15} />
-                        </span>
-                        <p className="text-ink text-[13px] font-semibold">{item.title}</p>
-                        <p className="text-ink-soft text-xs leading-relaxed">{item.description}</p>
-                    </div>
-                ))}
+                {text.principles.map((item, index) => {
+                    const Icon = principleIcons[index];
+                    return (
+                        <div
+                            key={item.title}
+                            className="border-line bg-surface rounded-card flex flex-col gap-2.5 border p-4"
+                        >
+                            <span className="bg-brand/10 text-brand flex size-8 items-center justify-center rounded-lg">
+                                <Icon size={15} />
+                            </span>
+                            <p className="text-ink text-[13px] font-semibold">{item.title}</p>
+                            <p className="text-ink-soft text-xs leading-relaxed">
+                                {item.description}
+                            </p>
+                        </div>
+                    );
+                })}
             </div>
 
-            <DocSubsection title="Páginas da aplicação">
-                <ul className="border-line bg-surface rounded-card divide-y divide-[var(--color-line)] border">
-                    {pages.map((page) => (
-                        <li key={page.to}>
+            <DocSubsection title={text.pagesTitle}>
+                <ul className="border-line bg-surface rounded-card divide-y divide-line border">
+                    {pageEntries.map((page) => (
+                        <li key={page.route}>
                             <Link
-                                to={page.to}
+                                to={path(page.route)}
                                 className="group hover:bg-surface-sunken/60 flex items-start gap-3 px-4 py-3.5 transition-colors"
                             >
                                 <page.icon
@@ -121,13 +83,13 @@ export function OverviewSection() {
                                 />
                                 <div className="min-w-0">
                                     <p className="text-ink group-hover:text-brand text-[13px] font-semibold transition-colors">
-                                        {page.title}{' '}
+                                        {t.shell.nav[page.route]}{' '}
                                         <span className="text-ink-faint font-mono text-[11px] font-normal">
-                                            {page.to}
+                                            {path(page.route)}
                                         </span>
                                     </p>
                                     <p className="text-ink-soft mt-0.5 text-xs leading-relaxed">
-                                        {page.description}
+                                        {text.pages[page.route]}
                                     </p>
                                 </div>
                             </Link>

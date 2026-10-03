@@ -12,6 +12,7 @@ import {
     Wand2,
 } from 'lucide-react';
 import { IconButton } from '@/components/IconButton';
+import { useI18n } from '@/hooks/useI18n';
 import { cn } from '@/lib/utils/cn';
 import type { CanvasTool } from '../GraphCanvas';
 
@@ -31,11 +32,11 @@ interface GraphToolbarProps {
     hint: string;
 }
 
-const tools: { value: CanvasTool; label: string; icon: typeof Plus }[] = [
-    { value: 'select', label: 'Selecionar e mover', icon: MousePointer2 },
-    { value: 'node', label: 'Adicionar vértice', icon: Plus },
-    { value: 'edge', label: 'Conectar vértices', icon: Spline },
-    { value: 'erase', label: 'Remover elemento', icon: Eraser },
+const tools: { value: CanvasTool; icon: typeof Plus }[] = [
+    { value: 'select', icon: MousePointer2 },
+    { value: 'node', icon: Plus },
+    { value: 'edge', icon: Spline },
+    { value: 'erase', icon: Eraser },
 ];
 
 export function GraphToolbar({
@@ -53,13 +54,16 @@ export function GraphToolbar({
     onArrangeNow,
     hint,
 }: GraphToolbarProps) {
+    const { t } = useI18n();
+    const text = t.studio.toolbar;
+
     return (
         <div className="pointer-events-none absolute inset-x-3 top-3 flex flex-wrap items-start gap-2">
             <div className="bg-surface/90 border-line shadow-soft pointer-events-auto flex items-center gap-0.5 rounded-xl border p-1 backdrop-blur-md">
                 {tools.map((item) => (
                     <IconButton
                         key={item.value}
-                        label={item.label}
+                        label={text[item.value]}
                         size="sm"
                         icon={<item.icon size={15} />}
                         active={tool === item.value}
@@ -70,21 +74,21 @@ export function GraphToolbar({
 
             <div className="bg-surface/90 border-line shadow-soft pointer-events-auto flex items-center gap-0.5 rounded-xl border p-1 backdrop-blur-md">
                 <IconButton
-                    label="Desfazer"
+                    label={text.undo}
                     size="sm"
                     icon={<Undo2 size={15} />}
                     disabled={!canUndo}
                     onClick={onUndo}
                 />
                 <IconButton
-                    label="Refazer"
+                    label={text.redo}
                     size="sm"
                     icon={<Redo2 size={15} />}
                     disabled={!canRedo}
                     onClick={onRedo}
                 />
                 <IconButton
-                    label="Limpar grafo"
+                    label={text.clear}
                     size="sm"
                     variant="danger"
                     icon={<Trash2 size={15} />}
@@ -94,14 +98,14 @@ export function GraphToolbar({
 
             <div className="bg-surface/90 border-line shadow-soft pointer-events-auto flex items-center gap-0.5 rounded-xl border p-1 backdrop-blur-md">
                 <IconButton
-                    label="Novas arestas não direcionadas"
+                    label={text.undirected}
                     size="sm"
                     icon={<Minus size={15} />}
                     active={!defaultDirected}
                     onClick={() => onDefaultDirectedChange(false)}
                 />
                 <IconButton
-                    label="Novas arestas direcionadas"
+                    label={text.directed}
                     size="sm"
                     icon={<ArrowRight size={15} />}
                     active={defaultDirected}
@@ -111,18 +115,14 @@ export function GraphToolbar({
 
             <div className="bg-surface/90 border-line shadow-soft pointer-events-auto flex items-center gap-0.5 rounded-xl border p-1 backdrop-blur-md">
                 <IconButton
-                    label={
-                        autoArrange
-                            ? 'Sugestão de posicionamento ligada'
-                            : 'Sugestão de posicionamento desligada'
-                    }
+                    label={autoArrange ? text.autoArrangeOn : text.autoArrangeOff}
                     size="sm"
                     icon={<Wand2 size={15} />}
                     active={autoArrange}
                     onClick={() => onAutoArrangeChange(!autoArrange)}
                 />
                 <IconButton
-                    label="Reorganizar agora"
+                    label={text.arrangeNow}
                     size="sm"
                     icon={<Sparkles size={15} />}
                     onClick={onArrangeNow}

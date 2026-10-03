@@ -216,7 +216,7 @@ export function BuilderPanel({
                                 <button
                                     onClick={() => setDirected(false)}
                                     className={cn(
-                                        'flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-[6px] text-[11px] font-medium transition-all',
+                                        'flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-md text-[11px] font-medium transition-all',
                                         !directed
                                             ? 'bg-surface text-ink shadow-soft'
                                             : 'text-ink-soft hover:text-ink'
@@ -227,7 +227,7 @@ export function BuilderPanel({
                                 <button
                                     onClick={() => setDirected(true)}
                                     className={cn(
-                                        'flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-[6px] text-[11px] font-medium transition-all',
+                                        'flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-md text-[11px] font-medium transition-all',
                                         directed
                                             ? 'bg-surface text-ink shadow-soft'
                                             : 'text-ink-soft hover:text-ink'

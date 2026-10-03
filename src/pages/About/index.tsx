@@ -40,9 +40,9 @@ export function About() {
             <section className="border-line relative overflow-hidden border-b">
                 <div
                     aria-hidden
-                    className="from-brand/12 pointer-events-none absolute inset-0 bg-gradient-to-br via-transparent to-transparent"
+                    className="from-brand/12 pointer-events-none absolute inset-0 bg-linear-to-br via-transparent to-transparent"
                 />
-                <div className="relative mx-auto w-full max-w-[1100px] px-4 py-14 sm:px-6 sm:py-20">
+                <div className="relative mx-auto w-full max-w-275 px-4 py-14 sm:px-6 sm:py-20">
                     <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:gap-8">
                         <AuthorAvatar
                             className="border-line shadow-soft size-24 shrink-0 rounded-2xl border sm:size-28"
@@ -83,7 +83,7 @@ export function About() {
                 </div>
             </section>
 
-            <section className="mx-auto w-full max-w-[1100px] px-4 py-14 sm:px-6">
+            <section className="mx-auto w-full max-w-275 px-4 py-14 sm:px-6">
                 <div className="grid gap-4 lg:grid-cols-2">
                     <Card>
                         <CardHeader

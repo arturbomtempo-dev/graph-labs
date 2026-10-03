@@ -29,7 +29,7 @@ export function Home() {
             <HeroSection />
 
             <section className="border-line border-b">
-                <div className="mx-auto grid w-full max-w-[1100px] gap-6 px-4 py-14 sm:grid-cols-3 sm:px-6">
+                <div className="mx-auto grid w-full max-w-275 gap-6 px-4 py-14 sm:grid-cols-3 sm:px-6">
                     {capabilities.map((capability) => (
                         <div key={capability.title} className="flex flex-col gap-2.5">
                             <span className="bg-brand/10 text-brand flex size-9 items-center justify-center rounded-lg">

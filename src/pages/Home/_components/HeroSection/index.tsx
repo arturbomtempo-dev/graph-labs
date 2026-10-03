@@ -7,9 +7,9 @@ export function HeroSection() {
         <section className="border-line relative overflow-hidden border-b">
             <div
                 aria-hidden
-                className="from-brand/12 pointer-events-none absolute inset-0 bg-gradient-to-br via-transparent to-transparent"
+                className="from-brand/12 pointer-events-none absolute inset-0 bg-linear-to-br via-transparent to-transparent"
             />
-            <div className="relative mx-auto w-full max-w-[1100px] px-4 py-16 sm:px-6 sm:py-24">
+            <div className="relative mx-auto w-full max-w-275 px-4 py-16 sm:px-6 sm:py-24">
                 <h1 className="text-ink max-w-3xl text-3xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-5xl">
                     Monte o grafo, escolha o algoritmo e acompanhe cada passo da execução.
                 </h1>

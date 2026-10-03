@@ -4,7 +4,7 @@ import { algorithms } from '@/lib/algorithms';
 
 export function AlgorithmGrid() {
     return (
-        <section className="mx-auto w-full max-w-[1100px] px-4 py-14 sm:px-6 sm:py-20">
+        <section className="mx-auto w-full max-w-275 px-4 py-14 sm:px-6 sm:py-20">
             <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                     <h2 className="text-ink text-xl font-semibold tracking-tight sm:text-2xl">

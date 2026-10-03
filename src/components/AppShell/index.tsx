@@ -10,6 +10,7 @@ const navigation = [
     { to: '/', label: 'Início', end: true },
     { to: '/estudio', label: 'Estúdio', end: false },
     { to: '/algoritmos', label: 'Algoritmos', end: false },
+    { to: '/documentacao', label: 'Documentação', end: false },
     { to: '/sobre', label: 'Sobre', end: false },
 ];
 
@@ -48,7 +49,7 @@ export function AppShell() {
                                 end={item.end}
                                 className={({ isActive }) =>
                                     cn(
-                                        'shrink-0 rounded-[6px] px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all duration-150',
+                                        'shrink-0 rounded-md px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all duration-150',
                                         isActive
                                             ? 'bg-surface text-ink shadow-soft'
                                             : 'text-ink-soft hover:text-ink'

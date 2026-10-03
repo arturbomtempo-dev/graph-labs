@@ -1,6 +1,7 @@
 import { AppShell } from '@/components/AppShell';
 import { About } from '@/pages/About';
 import { Algorithms } from '@/pages/Algorithms';
+import { Docs } from '@/pages/Docs';
 import { Home } from '@/pages/Home';
 import { NotFound } from '@/pages/NotFound';
 import { Studio } from '@/pages/Studio';
@@ -14,6 +15,7 @@ export function AppRoutes() {
                     <Route path="/" element={<Home />} />
                     <Route path="/estudio" element={<Studio />} />
                     <Route path="/algoritmos" element={<Algorithms />} />
+                    <Route path="/documentacao" element={<Docs />} />
                     <Route path="/sobre" element={<About />} />
                     <Route path="*" element={<NotFound />} />
                 </Route>

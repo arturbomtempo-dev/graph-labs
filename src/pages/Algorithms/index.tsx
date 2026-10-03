@@ -1,8 +1,9 @@
-import { useState } from 'react';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { algorithms } from '@/lib/algorithms';
 import { documentationById } from '@/lib/algorithms/documentation';
 import type { AlgorithmCategory } from '@/lib/graph/types';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { AlgorithmArticle } from './_components/AlgorithmArticle';
 
 const categories: (AlgorithmCategory | 'Todos')[] = [
@@ -20,13 +21,18 @@ const categories: (AlgorithmCategory | 'Todos')[] = [
 
 export function Algorithms() {
     const [category, setCategory] = useState<AlgorithmCategory | 'Todos'>('Todos');
+    const { hash } = useLocation();
+
+    useEffect(() => {
+        if (hash) document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView();
+    }, [hash]);
 
     const visible = algorithms.filter(
         (algorithm) => category === 'Todos' || algorithm.category === category
     );
 
     return (
-        <div className="mx-auto w-full max-w-[1100px] px-4 py-10 sm:px-6 sm:py-14">
+        <div className="mx-auto w-full max-w-275 px-4 py-10 sm:px-6 sm:py-14">
             <header className="flex flex-col gap-3">
                 <h1 className="text-ink text-2xl font-semibold tracking-tight sm:text-3xl">
                     Referência dos algoritmos

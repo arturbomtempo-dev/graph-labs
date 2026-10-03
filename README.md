@@ -455,12 +455,13 @@ The fastest way to get to know the project is to use it: [www.graphlabs.arturbom
 
 ### Application Pages
 
-| Route         | Page       | What it does                                                                         |
-| :------------ | :--------- | :----------------------------------------------------------------------------------- |
-| `/`           | Home       | Introduces the project and lists the available algorithms, grouped by category.      |
-| `/estudio`    | Studio     | Graph editor, algorithm selection, step by step execution and tracking panels.       |
-| `/algoritmos` | Algorithms | Idea, pseudocode, invariant and pitfalls for each algorithm, filterable by category. |
-| `/sobre`      | About      | Origin of the project, its purpose and information about the author.                 |
+| Route           | Page       | What it does                                                                            |
+| :-------------- | :--------- | :-------------------------------------------------------------------------------------- |
+| `/`             | Home       | Introduces the project and lists the available algorithms, grouped by category.         |
+| `/estudio`      | Studio     | Graph editor, algorithm selection, step by step execution and tracking panels.          |
+| `/algoritmos`   | Algorithms | Idea, pseudocode, invariant and pitfalls for each algorithm, filterable by category.    |
+| `/documentacao` | Docs       | Complete user guide: studio anatomy, tools, tabs, algorithm catalog, shortcuts and FAQ. |
+| `/sobre`        | About      | Origin of the project, its purpose and information about the author.                    |
 
 ### How to Use the Studio
 

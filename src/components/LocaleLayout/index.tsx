@@ -5,16 +5,15 @@ import {
     localeSettings,
     localizedPath,
     prefixedLocales,
-    readStoredLocale,
     routeFromPath,
-    storeLocale,
     translatePath,
     type Locale,
     type RouteKey,
 } from '@/i18n/config';
 import { I18nContext, type I18nValue } from '@/i18n/context';
-import { getDictionary, hasDictionary, loadDictionary } from '@/i18n/dictionaries';
+import { getDictionary, hasDictionary, loadDictionary, loadedLocale } from '@/i18n/dictionaries';
 import { applyPageHead, createPageHead } from '@/i18n/seo';
+import { readStoredLocale, storeLocale } from '@/i18n/storage';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
@@ -30,7 +29,7 @@ export function LocaleLayout() {
     const navigate = useNavigate();
     const { locale: requestedLocale, valid } = resolveSegment(segment);
 
-    const [readyLocale, setReadyLocale] = useState<Locale>(requestedLocale);
+    const [readyLocale, setReadyLocale] = useState<Locale>(() => loadedLocale(requestedLocale));
     const locale = hasDictionary(requestedLocale) ? requestedLocale : readyLocale;
     const t = getDictionary(locale);
     const page = valid ? (routeFromPath(pathname) ?? 'notFound') : 'notFound';

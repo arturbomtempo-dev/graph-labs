@@ -1,4 +1,84 @@
 {
     "$schema": "https://openapi.vercel.sh/vercel.json",
-    "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+    "trailingSlash": false,
+    "redirects": [
+        {
+            "source": "/estudio",
+            "destination": "/pt-br/studio",
+            "permanent": true
+        },
+        {
+            "source": "/algoritmos",
+            "destination": "/pt-br/algorithms",
+            "permanent": true
+        },
+        {
+            "source": "/documentacao",
+            "destination": "/pt-br/docs",
+            "permanent": true
+        },
+        {
+            "source": "/sobre",
+            "destination": "/pt-br/about",
+            "permanent": true
+        }
+    ],
+    "rewrites": [
+        {
+            "source": "/studio",
+            "destination": "/studio/index.html"
+        },
+        {
+            "source": "/algorithms",
+            "destination": "/algorithms/index.html"
+        },
+        {
+            "source": "/docs",
+            "destination": "/docs/index.html"
+        },
+        {
+            "source": "/about",
+            "destination": "/about/index.html"
+        },
+        {
+            "source": "/pt-br",
+            "destination": "/pt-br/index.html"
+        },
+        {
+            "source": "/pt-br/studio",
+            "destination": "/pt-br/studio/index.html"
+        },
+        {
+            "source": "/pt-br/algorithms",
+            "destination": "/pt-br/algorithms/index.html"
+        },
+        {
+            "source": "/pt-br/docs",
+            "destination": "/pt-br/docs/index.html"
+        },
+        {
+            "source": "/pt-br/about",
+            "destination": "/pt-br/about/index.html"
+        },
+        {
+            "source": "/es",
+            "destination": "/es/index.html"
+        },
+        {
+            "source": "/es/studio",
+            "destination": "/es/studio/index.html"
+        },
+        {
+            "source": "/es/algorithms",
+            "destination": "/es/algorithms/index.html"
+        },
+        {
+            "source": "/es/docs",
+            "destination": "/es/docs/index.html"
+        },
+        {
+            "source": "/es/about",
+            "destination": "/es/about/index.html"
+        }
+    ]
 }

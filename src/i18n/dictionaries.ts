@@ -35,6 +35,13 @@ export function loadDictionary(locale: Locale): Promise<Dictionary> {
     return request;
 }
 
+export function loadedLocale(preferred: Locale): Locale {
+    if (loaded.has(preferred)) return preferred;
+    const [first] = loaded.keys();
+    if (!first) throw new Error('No dictionary has been loaded yet.');
+    return first;
+}
+
 export function getDictionary(locale: Locale): Dictionary {
     const dictionary = loaded.get(locale);
     if (!dictionary) throw new Error(`The "${locale}" dictionary has not been loaded yet.`);

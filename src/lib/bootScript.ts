@@ -1,5 +1,5 @@
-import { LOCALE_STORAGE_KEY, legacyRoutes, prefixedLocales } from '@/i18n/config';
-import { DARK_THEME_CLASS, THEME_STORAGE_KEY } from './theme';
+import { LOCALE_STORAGE_KEY, legacyRoutes, prefixedLocales } from '../i18n/config.ts';
+import { DARK_THEME_CLASS, THEME_STORAGE_KEY } from './theme.ts';
 
 export function createBootScript(): string {
     const settings = JSON.stringify({

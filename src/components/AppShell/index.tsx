@@ -130,9 +130,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
                 )}
             />
 
-            <main className="flex flex-1 flex-col">
-                {children ?? <Outlet />}
-            </main>
+            <main className="flex flex-1 flex-col">{children ?? <Outlet />}</main>
 
             {isStudio ? null : <Footer />}
         </div>

@@ -1,4 +1,11 @@
-import { locales, localeSettings, localizedPath, routeSlugs, type Locale, type RouteKey } from './config';
+import {
+    locales,
+    localeSettings,
+    localizedPath,
+    routeSlugs,
+    type Locale,
+    type RouteKey,
+} from './config';
 import type { Dictionary } from './dictionaries';
 
 export const SITE_URL = 'https://www.graphlabs.arturbomtempo.dev';

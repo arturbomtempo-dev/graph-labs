@@ -316,13 +316,13 @@ npm run preview
 
 ### Available Scripts
 
-| Script            | Description                                                              |
-| :---------------- | :----------------------------------------------------------------------- |
-| `npm run dev`     | Starts the development server with Hot Module Replacement.               |
-| `npm run build`   | Type checks with `tsc -b` and generates the production build in `dist/`. |
-| `npm run preview` | Serves the previously generated production build locally.                |
-| `npm run lint`    | Runs ESLint across the project.                                          |
-| `npm run format`  | Formats the code with Prettier.                                          |
+| Script            | Description                                                                                                 |
+| :---------------- | :---------------------------------------------------------------------------------------------------------- |
+| `npm run dev`     | Starts the development server with Hot Module Replacement.                                                  |
+| `npm run build`   | Type checks with `tsc -b`, builds the client and the server bundle, and prerenders every page into `dist/`. |
+| `npm run preview` | Serves the previously generated production build locally.                                                   |
+| `npm run lint`    | Runs ESLint across the project.                                                                             |
+| `npm run format`  | Formats the code with Prettier.                                                                             |
 
 ### Environment Variables
 
@@ -340,28 +340,23 @@ The application is hosted on **Vercel**, with continuous deployment from the `ma
 npm run build
 ```
 
-This command runs the type check and generates the static files in `dist/`.
+The build runs in four stages: the type check, the client bundle, a server bundle of the same React tree, and [scripts/prerender.mjs](scripts/prerender.mjs), which renders every page in every language to static HTML. The output in `dist/` contains:
 
-2. **SPA routing configuration:**
+- one prerendered `index.html` per page and language (`/`, `/pt-br/studio`, `/es/docs`...), with its own `<html lang>`, title, description, canonical URL, `hreflang` alternates and Open Graph tags, so search engines and link previews (WhatsApp, LinkedIn, X) see the right language;
+- a `404.html` page, served with a real 404 status;
+- `sitemap.xml` with every URL and its language alternates, referenced by `robots.txt`.
 
-Because the project uses client side routing with React Router, every request needs to fall back to `index.html`. This is already configured in [vercel.json](vercel.json):
+On the client, React hydrates the prerendered HTML instead of rendering from scratch, and each language dictionary is a separate chunk preloaded only for the page's language.
 
-```json
-{
-    "$schema": "https://openapi.vercel.sh/vercel.json",
-    "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
-}
-```
+2. **Hosting configuration:**
 
-> [!IMPORTANT]
-> Without that rewrite, opening a route such as `/estudio` directly, or reloading the page, would return a 404, since there is no matching file on the server.
+[vercel.json](vercel.json) maps each route to its prerendered file, permanently redirects the old Portuguese routes (`/estudio` → `/pt-br/studio`) and removes trailing slashes. The prerender script fails the build if a page is missing from the rewrites, so the two can never drift apart.
 
 3. **Publishing:**
 
 On Vercel, simply connect the repository: the framework is detected automatically as Vite, with `npm run build` as the build command and `dist` as the output directory. Every push to `main` triggers a new production deployment.
 
-Since the build output is a set of static files, the project can also be published on any other static hosting service (Netlify, GitHub Pages, Cloudflare Pages, Amazon S3 with CloudFront), as long as the same `index.html` rewrite rule is configured.
-
+Since the build output is a set of static files, the project can also be published on any other static hosting service (Netlify, GitHub Pages, Cloudflare Pages, Amazon S3 with CloudFront), as long as each route is served from its `<route>/index.html` file and unknown paths fall back to `404.html`.
 ---
 
 ## 📂 Project Structure

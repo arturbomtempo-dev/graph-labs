@@ -78,20 +78,3 @@ export function translatePath(pathname: string, target: Locale): string {
         pathWithoutPrefix(pathname, localeFromPath(pathname))
     );
 }
-
-export function readStoredLocale(): Locale | null {
-    try {
-        const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
-        return isLocale(stored) ? stored : null;
-    } catch {
-        return null;
-    }
-}
-
-export function storeLocale(locale: Locale) {
-    try {
-        window.localStorage.setItem(LOCALE_STORAGE_KEY, locale);
-    } catch {
-        return;
-    }
-}

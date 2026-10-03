@@ -40,7 +40,7 @@ export function undirectedDegrees(
 }
 
 export const greedyColoring: AlgorithmDefinition = {
-    id: 'coloracao-gulosa',
+    id: 'greedy-coloring',
     name: 'Método guloso',
     shortName: 'Coloração gulosa',
     category: 'Coloração',

@@ -18,7 +18,7 @@ const markLabel: Record<Mark, string> = {
 };
 
 export const topologicalDfs: AlgorithmDefinition = {
-    id: 'topologica-dfs',
+    id: 'topological-dfs',
     name: 'Ordenação topológica por busca em profundidade',
     shortName: 'Ord. topológica (BP)',
     category: 'Ordenação topológica',

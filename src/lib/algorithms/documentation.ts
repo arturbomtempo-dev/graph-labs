@@ -393,7 +393,7 @@ export const documentation: AlgorithmDocumentation[] = [
         ],
     },
     {
-        id: 'topologica-dfs',
+        id: 'topological-dfs',
         idea: 'Alternativa baseada na busca em profundidade, descrita por Tarjan em 1976. Cada vértice é inserido no resultado somente após todos os que dependem dele, e a inserção é feita no início da lista, daí a ordem reversa.',
         pseudocode: [
             'Método por Busca em Profundidade',
@@ -462,7 +462,7 @@ export const documentation: AlgorithmDocumentation[] = [
         ],
     },
     {
-        id: 'coloracao-gulosa',
+        id: 'greedy-coloring',
         idea: 'Não há método eficiente para obter a coloração mínima de um grafo, mas é possível obter rapidamente uma coloração aproximada: percorrem-se os vértices em uma ordem qualquer, atribuindo a cada um a cor de menor índice não utilizada por seus vizinhos.',
         pseudocode: [
             'Método Guloso',

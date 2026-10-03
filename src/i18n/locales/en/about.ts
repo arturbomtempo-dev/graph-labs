@@ -2,7 +2,7 @@ export const about = {
     eyebrow: 'About the author',
     headline: 'Software Developer',
     summary: (institution: string) =>
-        `Software Developer · Graph Theory teaching assistant at ${institution} in the 2nd semester of 2026.`,
+        `Software Developer | Graph Theory teaching assistant at ${institution} in the 2nd semester of 2026.`,
     credentials: [
         {
             title: 'Software Developer',

@@ -4,7 +4,7 @@ export const about: Dictionary['about'] = {
     eyebrow: 'Sobre el autor',
     headline: 'Desarrollador de software',
     summary: (institution) =>
-        `Desarrollador de software · Monitor de Teoría de Grafos en la ${institution} en el 2.º semestre de 2026.`,
+        `Desarrollador de software | Monitor de Teoría de Grafos en la ${institution} en el 2.º semestre de 2026.`,
     credentials: [
         {
             title: 'Desarrollador de software',
